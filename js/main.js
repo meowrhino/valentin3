@@ -719,16 +719,20 @@ function render(slug) {
 
 const centerOfViewport = () => ({ x: innerWidth / 2, y: innerHeight / 2 });
 
-/** Encuentra el dot del strip de un proyecto, scrolleando si está fuera de vista. */
+/** Encuentra el dot del strip de un proyecto, scrolleando si está fuera de vista.
+ *  Usamos `window.scrollTo(x, y)` imperativo (siempre instantáneo) en vez de
+ *  `scrollIntoView({behavior:'instant'})`, que no está soportado en todos los
+ *  navegadores y puede caer a smooth — causaría un scroll visible durante el
+ *  reveal del iris. */
 function findStripDotCenter(slug) {
   const strip = document.querySelector(`.strip[data-slug="${CSS.escape(slug)}"]`);
   if (!strip) return centerOfViewport();
-  const dot = strip.querySelector('.dot');
-  const rect = () => (dot || strip).getBoundingClientRect();
-  let r = rect();
+  const target = strip.querySelector('.dot') || strip;
+  let r = target.getBoundingClientRect();
   if (r.top < 0 || r.bottom > innerHeight) {
-    strip.scrollIntoView({ block: 'center', behavior: 'instant' });
-    r = rect();
+    const y = window.scrollY + r.top - (innerHeight - r.height) / 2;
+    window.scrollTo(0, Math.max(0, y));
+    r = target.getBoundingClientRect();
   }
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }
