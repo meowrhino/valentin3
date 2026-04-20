@@ -14,17 +14,17 @@
     "contenido": [
       { "tipo": "imagen", "src": 1 },
       { "tipo": "imagen", "src": 2 },
-      { "tipo": "texto", "texto": "Every frame is a conversation between what happened and what I chose to see.", "height": 30 },
+      { "tipo": "texto", "texto": "Every frame is a conversation between what happened and what I chose to see." },
       { "tipo": "imagen", "src": 3 },
       { "tipo": "imagen", "src": 4 },
-      { "tipo": "audio", "src": "WhatsApp Audio 2026-04-09 at 11.23.28.opus", "height": 40 },
+      { "tipo": "audio", "src": "WhatsApp Audio 2026-04-09 at 11.23.28.opus" },
       { "tipo": "imagen", "src": 5 },
       { "tipo": "imagen", "src": 6 },
-      { "tipo": "texto", "texto": "I don't chase the light. I wait for it to find its way.", "height": 25 },
+      { "tipo": "texto", "texto": "I don't chase the light. I wait for it to find its way." },
       { "tipo": "imagen", "src": 7 },
       { "tipo": "imagen", "src": 8 },
       { "tipo": "imagen", "src": 9 },
-      { "tipo": "texto", "texto": "The silence between two frames is where the real story lives.", "height": 25 },
+      { "tipo": "texto", "texto": "The silence between two frames is where the real story lives." },
       { "tipo": "imagen", "src": 10 },
       { "tipo": "imagen", "src": 11 }
     ]
