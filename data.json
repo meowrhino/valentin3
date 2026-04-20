@@ -1,0 +1,163 @@
+{
+  "meta": {
+    "nombre": "valentin barrio",
+    "tagline": "creative based in europe",
+    "email": "email@work.com"
+  },
+  "about": {
+    "slug": "_valentin",
+    "nombre": "valentin barrio",
+    "imgHome": 3,
+    "tipo": "Photography, Art Direction, Visual Storytelling",
+    "lugar": "Barcelona",
+    "descripcion": "Photographer and visual artist based in Barcelona. Focused on capturing the raw energy of live events, fashion editorials, and intimate portraits.",
+    "contenido": [
+      { "tipo": "imagen", "src": 1 },
+      { "tipo": "imagen", "src": 2 },
+      { "tipo": "texto", "texto": "Every frame is a conversation between what happened and what I chose to see.", "height": 30 },
+      { "tipo": "imagen", "src": 3 },
+      { "tipo": "imagen", "src": 4 },
+      { "tipo": "audio", "src": "WhatsApp Audio 2026-04-09 at 11.23.28.opus", "height": 40 },
+      { "tipo": "imagen", "src": 5 },
+      { "tipo": "imagen", "src": 6 },
+      { "tipo": "texto", "texto": "I don't chase the light. I wait for it to find its way.", "height": 25 },
+      { "tipo": "imagen", "src": 7 },
+      { "tipo": "imagen", "src": 8 },
+      { "tipo": "imagen", "src": 9 },
+      { "tipo": "texto", "texto": "The silence between two frames is where the real story lives.", "height": 25 },
+      { "tipo": "imagen", "src": 10 },
+      { "tipo": "imagen", "src": 11 }
+    ]
+  },
+  "projects": [
+    {
+      "slug": "bolder",
+      "nombre": "Bolder",
+      "imgHome": 1,
+      "imgCount": 7,
+      "tipo": "press",
+      "lugar": "Barcelona",
+      "fecha": "jan. 26",
+      "descripcion": "Editorial shoot exploring contrast between urban attitude and raw natural landscapes."
+    },
+    {
+      "slug": "brunch",
+      "nombre": "Brunch!",
+      "imgHome": 1,
+      "imgCount": 81,
+      "tipo": "festival",
+      "lugar": "Barcelona",
+      "fecha": "august 25",
+      "descripcion": "Full documentation of the Brunch electronic music series. Light, smoke, and movement."
+    },
+    {
+      "slug": "kalaRos",
+      "nombre": "Kala Ros",
+      "imgHome": 1,
+      "imgCount": 7,
+      "tipo": "press",
+      "lugar": "Barcelona",
+      "fecha": "dec. 25",
+      "descripcion": "Intimate portrait series. Natural light, minimal intervention."
+    },
+    {
+      "slug": "kult",
+      "nombre": "Kult",
+      "imgHome": 1,
+      "imgCount": 9,
+      "tipo": "club",
+      "lugar": "Barcelona",
+      "fecha": "dec. 25",
+      "descripcion": "Dark editorial for Kult magazine. Textures, shadows, and bold silhouettes."
+    },
+    {
+      "slug": "lucho",
+      "nombre": "Lucho (Ve)",
+      "imgHome": 1,
+      "imgCount": 12,
+      "tipo": "press",
+      "lugar": "Reflejo 44",
+      "fecha": "feb. 26",
+      "descripcion": "Artist portrait series. Capturing the personality behind the sound."
+    },
+    {
+      "slug": "lynn",
+      "nombre": "Lynn",
+      "imgHome": 1,
+      "imgCount": 10,
+      "tipo": "press",
+      "lugar": "Mallorca",
+      "fecha": "oct. 25",
+      "descripcion": "Golden hour portrait session. Warmth and authenticity.",
+      "equipo": [
+        { "nombre": "Rivka", "rol": "photo assist & 2nd camera" }
+      ]
+    },
+    {
+      "slug": "razz",
+      "nombre": "Razz",
+      "imgHome": 1,
+      "imgCount": 19,
+      "tipo": "club",
+      "lugar": "Barcelona",
+      "fecha": "feb. 25",
+      "descripcion": "Razzmatazz nights. The energy of the crowd under neon and strobe."
+    },
+    {
+      "slug": "santana",
+      "nombre": "Santana",
+      "imgHome": 1,
+      "imgCount": 10,
+      "tipo": "festival",
+      "lugar": "Barcelona",
+      "fecha": "feb. 26",
+      "descripcion": "Character study in urban environments. Street meets studio."
+    },
+    {
+      "slug": "soundit",
+      "nombre": "Sound it!",
+      "imgHome": 1,
+      "imgCount": 71,
+      "tipo": "festival",
+      "lugar": "Barcelona",
+      "fecha": "august 25",
+      "descripcion": "Complete visual chronicle of Soundit festival. From backstage to main stage."
+    },
+    {
+      "slug": "yu",
+      "nombre": "Yu",
+      "imgHome": 1,
+      "imgCount": 17,
+      "tipo": "club",
+      "lugar": "Barcelona",
+      "fecha": "dec. 25",
+      "descripcion": "Fashion editorial blending Eastern and Western aesthetics."
+    },
+    {
+      "slug": "carlos",
+      "nombre": "Carlos",
+      "imgHome": 8,
+      "imgCount": 21,
+      "tipo": "press",
+      "lugar": "Barcelona",
+      "fecha": "Spring 2025",
+      "descripcion": "Portrait editorial with Carlos. Character, attitude, and natural expression.",
+      "equipo": [
+        { "nombre": "Carlos", "rol": "" }
+      ]
+    },
+    {
+      "slug": "heyami",
+      "nombre": "Hey Ami",
+      "imgHome": 1,
+      "imgCount": 9,
+      "tipo": "press",
+      "lugar": "Barcelona",
+      "fecha": "Winter 2025",
+      "descripcion": "Creative direction and photography for Hey Ami. Bold visuals and identity.",
+      "equipo": [
+        { "nombre": "Hey Ami", "rol": "" }
+      ]
+    }
+  ]
+}
