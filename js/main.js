@@ -1,38 +1,73 @@
 // ============================================================================
-// valentin3 — SPA router + iris (2 fases) + lightbox + scroll infinito
+// valentin3 — SPA portfolio
+// ----------------------------------------------------------------------------
+// Toda la web vive en esta sola página. Este script:
+//   1. lee `data.json` (proyectos + metadatos del about)
+//   2. pinta la home (tiras/strips + scroll infinito random)
+//   3. pinta cada proyecto (ficha + galería + audios + textos)
+//   4. enlaza URLs limpias (`/bolder`) con pushState + 404.html fallback
+//   5. anima las transiciones con un "iris" en dos fases
+//   6. muestra imágenes en un lightbox con FLIP-style animation
 // ============================================================================
 
-// ---------- Base path ----------
-const SCRIPT_URL = new URL(import.meta.url);
-const BASE_URL = new URL('../', SCRIPT_URL);
-const BASE_PATH = BASE_URL.pathname;
 
-function asset(p) {
-  return BASE_PATH + String(p).replace(/^\.?\/+/, '');
-}
-function projectsAsset(slug, file) {
-  return asset(`_PROJECTS/${slug}/${file}`);
-}
-function projectImgUrl(slug, n) {
-  return projectsAsset(slug, `${n}.webp`);
-}
+// ============================================================================
+// BASE PATH
+// ----------------------------------------------------------------------------
+// Detectamos dónde está desplegado el sitio leyendo la URL del propio script.
+// Esto hace que funcione igual en `meowrhino.github.io/valentin3/` (subdir)
+// que en un dominio propio en la raíz (`valentinbarrio.com/`).
+// ============================================================================
+const BASE_PATH = new URL('../', import.meta.url).pathname;
+
+/** Convierte una ruta relativa del repo en una URL absoluta válida. */
+const asset = (p) => BASE_PATH + String(p).replace(/^\.?\/+/, '');
+
+/** URL a un archivo dentro de `_PROJECTS/<slug>/`. */
+const projectsAsset = (slug, file) => asset(`_PROJECTS/${slug}/${file}`);
+
+/** URL a la imagen N-ésima de un proyecto (se asume .webp). */
+const projectImgUrl = (slug, n) => projectsAsset(slug, `${n}.webp`);
+
+/** Lee el slug actual desde la URL, o null si estamos en la home. */
 function slugFromPath() {
-  let p = window.location.pathname;
+  let p = location.pathname;
   if (p.startsWith(BASE_PATH)) p = p.slice(BASE_PATH.length);
   p = p.replace(/^\/+|\/+$/g, '');
   return p ? decodeURIComponent(p) : null;
 }
-function urlForSlug(slug) {
-  return slug ? BASE_PATH + encodeURIComponent(slug) : BASE_PATH;
-}
 
+/** URL canónica para un slug (o la raíz si slug=null). */
+const urlForSlug = (slug) => slug ? BASE_PATH + encodeURIComponent(slug) : BASE_PATH;
+
+
+// ============================================================================
+// UTILIDADES
+// ============================================================================
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-if ('scrollRestoration' in history) {
-  history.scrollRestoration = 'manual';
+// Evitamos que el navegador restaure el scroll en el popstate: la restauración
+// ocurre ANTES del handler y haría un salto visible antes de que el iris cubra.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+/** Pequeño helper para crear elementos. `h('div', {class: 'x'}, 'hola')`. */
+function h(tag, props = {}, ...children) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'dataset') Object.assign(el.dataset, v);
+    else if (k in el) el[k] = v;
+    else el.setAttribute(k, v);
+  }
+  for (const c of children.flat()) {
+    if (c == null || c === false) continue;
+    el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return el;
 }
 
-// ---------- Utilidades ----------
+/** Fisher-Yates shuffle (no muta el array original). */
 function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -42,16 +77,14 @@ function shuffle(arr) {
   return a;
 }
 
-function easeInOutCubic(t) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
+const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
+/** Anima un valor de `from` a `to` en `duration`ms, llamando a `apply` cada frame. */
 function animateValue(from, to, duration, easing, apply) {
   return new Promise((resolve) => {
     const start = performance.now();
     function frame(now) {
-      const elapsed = now - start;
-      const p = Math.min(1, elapsed / duration);
+      const p = Math.min(1, (now - start) / duration);
       apply(from + (to - from) * easing(p));
       if (p < 1) requestAnimationFrame(frame);
       else resolve();
@@ -60,11 +93,12 @@ function animateValue(from, to, duration, easing, apply) {
   });
 }
 
-function delay(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// ---------- Data ----------
+
+// ============================================================================
+// DATA
+// ============================================================================
 let DATA = null;
 
 async function loadData() {
@@ -75,56 +109,62 @@ async function loadData() {
   return DATA;
 }
 
+/** Busca un proyecto por slug (considerando también el objeto `about`). */
 function findProject(data, slug) {
   if (!slug) return null;
   if (data.about && data.about.slug === slug) return data.about;
   return (data.projects || []).find((p) => p.slug === slug) || null;
 }
 
-function heroImgNumber(p) {
-  return typeof p.imgHome === 'number' ? p.imgHome : 1;
-}
+const heroImgNumber = (p) => typeof p.imgHome === 'number' ? p.imgHome : 1;
+
 
 // ============================================================================
-// IRIS — dos fases "abriéndose":
-//   Fase 1 (cover)  : círculo negro crece desde A hasta cubrir todo
-//   Fase 2 (reveal) : agujero transparente crece desde B hasta descubrir todo
+// IRIS — transición en dos fases
+// ----------------------------------------------------------------------------
+// Usamos un overlay a pantalla completa con un `mask-image` radial que
+// animamos para abrir/cerrar un círculo. Dos fases encadenadas:
+//
+//   1. COVER  · círculo NEGRO crece desde el punto de origen hasta tapar todo
+//              (inner=#000, outer=transparent en la máscara).
+//   2. REVEAL · un agujero TRANSPARENTE crece desde el punto de destino hasta
+//              descubrir la página nueva (inner=transparent, outer=#000).
+//
+// Mientras el iris está animando marcamos `busy=true` y le damos
+// `pointer-events: auto` para bloquear clicks.
 // ============================================================================
 const Iris = (() => {
   let el = null;
   let busy = false;
 
   const COVER_MS = 550;
-  const PAUSE_MS = 90;
+  const PAUSE_MS = 90;   // pausa corta en negro entre fases
   const REVEAL_MS = 650;
 
   function ensure() {
     if (el) return el;
-    el = document.createElement('div');
-    el.className = 'iris';
-    el.setAttribute('aria-hidden', 'true');
+    el = h('div', { class: 'iris', 'aria-hidden': 'true' });
     document.body.appendChild(el);
-    setMask(0, 0, 0, true); // estado inicial: totalmente transparente
+    setMask(0, 0, 0, true); // arranca "revelado" (overlay oculto)
     return el;
   }
 
   function setBusy(v) {
     busy = v;
-    if (el) el.style.pointerEvents = v ? 'auto' : 'none';
+    ensure(); // garantiza que el overlay existe antes de tocar pointer-events
+    el.style.pointerEvents = v ? 'auto' : 'none';
   }
 
+  /** Radio máximo necesario para que el círculo cubra la pantalla desde (x,y). */
   function maxRadius(x, y) {
-    const W = innerWidth, H = innerHeight;
-    return Math.hypot(Math.max(x, W - x), Math.max(y, H - y)) + 40;
+    return Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 40;
   }
 
-  // phase: 'cover' (black-inside) | 'reveal' (transparent-inside)
   function setMask(x, y, r, covering) {
     if (!el) return;
     const inner = covering ? '#000' : 'transparent';
     const outer = covering ? 'transparent' : '#000';
-    const grad =
-      `radial-gradient(circle at ${x}px ${y}px, ${inner} ${r}px, ${outer} ${r + 1}px)`;
+    const grad = `radial-gradient(circle at ${x}px ${y}px, ${inner} ${r}px, ${outer} ${r + 1}px)`;
     el.style.webkitMaskImage = grad;
     el.style.maskImage = grad;
   }
@@ -132,28 +172,30 @@ const Iris = (() => {
   function cover(x, y, duration = COVER_MS) {
     ensure();
     if (REDUCED_MOTION) { setMask(x, y, 99999, true); return Promise.resolve(); }
-    const maxR = maxRadius(x, y);
-    return animateValue(0, maxR, duration, easeInOutCubic, (r) => {
-      setMask(x, y, r, true);
-    });
+    return animateValue(0, maxRadius(x, y), duration, easeInOutCubic,
+      (r) => setMask(x, y, r, true));
   }
 
   function reveal(x, y, duration = REVEAL_MS) {
     ensure();
     if (REDUCED_MOTION) { setMask(x, y, 99999, false); return Promise.resolve(); }
-    const maxR = maxRadius(x, y);
-    return animateValue(0, maxR, duration, easeInOutCubic, (r) => {
-      setMask(x, y, r, false);
-    });
+    return animateValue(0, maxRadius(x, y), duration, easeInOutCubic,
+      (r) => setMask(x, y, r, false));
   }
 
-  function pause() { return delay(PAUSE_MS); }
+  const pause = () => delay(PAUSE_MS);
 
   return { cover, reveal, pause, setBusy, isBusy: () => busy };
 })();
 
+
 // ============================================================================
 // LIGHTBOX
+// ----------------------------------------------------------------------------
+// Al clicar una imagen de la galería, la ampliamos a pantalla completa con
+// una animación FLIP: medimos el rect del thumbnail, posicionamos el <img>
+// encima, y animamos sus dimensiones al espacio final. Al cerrar se invierte.
+// Se navega con flechas, se cierra con ESC, click en el fondo o en las X.
 // ============================================================================
 const Lightbox = (() => {
   let el = null, imgEl = null;
@@ -164,8 +206,7 @@ const Lightbox = (() => {
 
   function ensure() {
     if (el) return el;
-    el = document.createElement('div');
-    el.className = 'lightbox lightbox--hidden';
+    el = h('div', { class: 'lightbox lightbox--hidden' });
     el.innerHTML = `
       <img class="lightbox__img" alt="" />
       <button class="lightbox__close lightbox__close--tl" aria-label="close">×</button>
@@ -180,17 +221,20 @@ const Lightbox = (() => {
   }
 
   function bind() {
+    // click sobre el fondo o la propia imagen => cerrar
     el.addEventListener('click', (e) => {
       if (e.target === el || e.target === imgEl) close();
     });
+    // cada esquina tiene su X
     el.querySelectorAll('.lightbox__close').forEach((b) => {
       b.addEventListener('click', (e) => { e.stopPropagation(); close(); });
     });
+    // teclado global (sólo activo si el lightbox está abierto)
     document.addEventListener('keydown', (e) => {
       if (!isOpen) return;
-      if (e.key === 'Escape') { e.preventDefault(); close(); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+      if (e.key === 'Escape')      { e.preventDefault(); close(); }
+      else if (e.key === 'ArrowLeft')  { e.preventDefault(); swap(idx - 1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); swap(idx + 1); }
     });
   }
 
@@ -204,6 +248,7 @@ const Lightbox = (() => {
     imgEl.src = images[idx];
 
     if (sourceRect) {
+      // Fase 1: colocamos la imagen en las mismas coords que el thumbnail.
       Object.assign(imgEl.style, {
         transition: 'none',
         position: 'fixed',
@@ -218,8 +263,9 @@ const Lightbox = (() => {
 
       el.classList.remove('lightbox--hidden');
       el.style.background = 'transparent';
-      void imgEl.offsetHeight;
+      void imgEl.offsetHeight; // forzar reflow antes de la transición
 
+      // Fase 2: animamos al tamaño completo (80dvw × 80dvh).
       imgEl.style.transition = 'all 0.45s cubic-bezier(0.4, 0, 0.2, 1)';
       imgEl.style.left = '10dvw';
       imgEl.style.top = '10dvh';
@@ -232,6 +278,7 @@ const Lightbox = (() => {
         el.style.background = '';
       }, 40);
 
+      // Tras la animación, limpiamos los estilos inline para que ceda al CSS.
       setTimeout(() => {
         Object.assign(imgEl.style, {
           transition: '', position: '', left: '', top: '',
@@ -248,6 +295,7 @@ const Lightbox = (() => {
     isOpen = false;
 
     if (sourceRect) {
+      // FLIP inverso: congelamos la posición actual y animamos de vuelta al thumbnail.
       const cur = imgEl.getBoundingClientRect();
       Object.assign(imgEl.style, {
         transition: 'none',
@@ -286,6 +334,7 @@ const Lightbox = (() => {
     }
   }
 
+  /** Pasa a la imagen `newIdx` (con wrap-around) con un fade corto. */
   function swap(newIdx) {
     if (!isOpen || images.length <= 1) return;
     idx = (newIdx + images.length) % images.length;
@@ -295,56 +344,111 @@ const Lightbox = (() => {
       imgEl.src = images[idx];
       const done = () => { imgEl.style.opacity = '1'; };
       imgEl.addEventListener('load', done, { once: true });
-      setTimeout(done, 120);
+      setTimeout(done, 120); // fallback si ya estaba cacheada
     }, 150);
   }
-
-  function prev() { swap(idx - 1); }
-  function next() { swap(idx + 1); }
 
   return { open, close, isOpen: () => isOpen };
 })();
 
+
+// ============================================================================
+// AUDIO PLAYER (reutilizable)
+// ----------------------------------------------------------------------------
+// Un solo audio suena a la vez. `currentAudio` apunta al que está activo,
+// al reproducir otro pausamos el anterior.
+// ============================================================================
+let currentAudio = null;
+
+function fmtTime(t) {
+  if (!isFinite(t)) return '0:00';
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function buildAudioBlock(slug, item) {
+  const btn  = h('button', { type: 'button', class: 'audio-player__btn', textContent: '▶ play' });
+  const time = h('span',   { class: 'audio-player__time', textContent: '0:00' });
+  const fill = h('div',    { class: 'audio-player__fill' });
+  const bar  = h('div',    { class: 'audio-player__bar' }, fill);
+
+  const audio = new Audio();
+  audio.src = projectsAsset(slug, item.src);
+  audio.preload = 'metadata';
+
+  btn.addEventListener('click', () => {
+    if (audio.paused) {
+      if (currentAudio && currentAudio !== audio) currentAudio.pause();
+      audio.play();
+      currentAudio = audio;
+      btn.textContent = '❚❚ pause';
+    } else {
+      audio.pause();
+      btn.textContent = '▶ play';
+    }
+  });
+  audio.addEventListener('timeupdate', () => {
+    time.textContent = fmtTime(audio.currentTime);
+    if (audio.duration) fill.style.width = (audio.currentTime / audio.duration * 100) + '%';
+  });
+  audio.addEventListener('ended', () => {
+    btn.textContent = '▶ play';
+    fill.style.width = '0%';
+  });
+  // Seek clicando en la barra.
+  bar.addEventListener('click', (e) => {
+    if (!audio.duration) return;
+    const r = bar.getBoundingClientRect();
+    audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
+  });
+
+  return h('div', { class: 'audio-block' },
+    h('div', { class: 'audio-player' }, btn, bar, time)
+  );
+}
+
+
 // ============================================================================
 // HOME — strips iniciales en orden + scroll infinito random
+// ----------------------------------------------------------------------------
+// El primer pase muestra about + proyectos en el orden del JSON. A partir de
+// ahí, al acercarse al fondo se añaden batches de strips aleatorios tomados
+// de un pool (triple de los proyectos, barajado).
 // ============================================================================
 
-// Estado de infinito (se resetea al entrar en home)
+// Estado del infinito. Se resetea en cada entrada a home.
 const InfState = {
-  pool: [],
-  poolPtr: 0,
-  stripsEl: null,
-  abort: null,
+  pool: [],       // array barajado de proyectos para ir consumiendo
+  poolPtr: 0,     // puntero dentro del pool; al agotarse se re-baraja
+  stripsEl: null, // contenedor DOM donde se insertan las nuevas strips
 };
 
+/** Crea un <a class="strip"> con imagen + dot para un proyecto. */
 function buildStrip(p) {
-  const a = document.createElement('a');
-  a.className = 'strip';
-  a.href = urlForSlug(p.slug);
-  a.dataset.slug = p.slug;
-  a.setAttribute('aria-label', p.nombre || p.slug);
-
-  const img = document.createElement('img');
-  img.src = projectImgUrl(p.slug, heroImgNumber(p));
-  img.alt = p.nombre || p.slug;
-  img.loading = 'lazy';
-  a.appendChild(img);
-
-  const dot = document.createElement('span');
-  dot.className = 'dot';
-  a.appendChild(dot);
+  const img = h('img', {
+    src: projectImgUrl(p.slug, heroImgNumber(p)),
+    alt: p.nombre || p.slug,
+    loading: 'lazy',
+  });
+  const dot = h('span', { class: 'dot' });
+  const a = h('a', {
+    class: 'strip',
+    href: urlForSlug(p.slug),
+    dataset: { slug: p.slug },
+    'aria-label': p.nombre || p.slug,
+  }, img, dot);
 
   a.addEventListener('click', (e) => {
+    // respetar cmd/ctrl/shift-click (abrir en pestaña nueva, etc.)
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
-    const dotEl = a.querySelector('.dot');
-    const r = dotEl.getBoundingClientRect();
+    const r = dot.getBoundingClientRect();
     navigateTo(p.slug, {
       originX: r.left + r.width / 2,
       originY: r.top + r.height / 2,
     });
   });
-
   return a;
 }
 
@@ -362,6 +466,7 @@ function appendRandomBatch(n = 6) {
 }
 
 function setupInfiniteScroll(projects, signal) {
+  // Triplicamos para que el ciclo de "re-baraja" no sea tan frecuente.
   InfState.pool = shuffle([...projects, ...projects, ...projects]);
   InfState.poolPtr = 0;
 
@@ -371,17 +476,15 @@ function setupInfiniteScroll(projects, signal) {
     ticking = true;
     requestAnimationFrame(() => {
       ticking = false;
-      const doc = document.documentElement;
-      const scrollBottom = window.scrollY + window.innerHeight;
-      const total = doc.scrollHeight;
-      if (total - scrollBottom < innerHeight * 0.8) {
-        appendRandomBatch(6);
-      }
+      const total = document.documentElement.scrollHeight;
+      const scrollBottom = window.scrollY + innerHeight;
+      // Cargamos más cuando quedan <80% de pantalla por scrollear.
+      if (total - scrollBottom < innerHeight * 0.8) appendRandomBatch(6);
     });
   };
-  window.addEventListener('scroll', onScroll, { passive: true, signal });
+  addEventListener('scroll', onScroll, { passive: true, signal });
 
-  // asegurar que haya al menos un par de pantallas
+  // Garantiza un mínimo de contenido para que el scroll empiece en pantallas altas.
   const ensureFill = () => {
     let guard = 0;
     while (document.documentElement.scrollHeight < innerHeight * 1.6 && guard < 20) {
@@ -390,305 +493,221 @@ function setupInfiniteScroll(projects, signal) {
     }
   };
   ensureFill();
-  window.addEventListener('resize', ensureFill, { signal });
+  addEventListener('resize', ensureFill, { signal });
 }
 
 function renderHome(data) {
   document.title = data.meta?.nombre || 'valentin barrio';
 
-  const main = document.createElement('main');
-  main.className = 'page page-home';
+  const header = h('header', { class: 'home-header' },
+    h('div', { class: 'name',    textContent: data.meta?.nombre || '' }),
+    data.meta?.tagline ? h('div', { class: 'tagline', textContent: data.meta.tagline }) : null,
+    data.meta?.email
+      ? h('a', { class: 'email', href: `mailto:${data.meta.email}`, textContent: data.meta.email })
+      : null,
+  );
 
-  const header = document.createElement('header');
-  header.className = 'home-header';
-  header.innerHTML = `
-    <div class="name">${data.meta?.nombre || ''}</div>
-    ${data.meta?.tagline ? `<div class="tagline">${data.meta.tagline}</div>` : ''}
-    ${data.meta?.email ? `<a class="email" href="mailto:${data.meta.email}">${data.meta.email}</a>` : ''}
-  `;
-  main.appendChild(header);
-
-  const strips = document.createElement('div');
-  strips.className = 'strips';
-
+  const strips = h('div', { class: 'strips' });
+  // Orden inicial: about primero, luego los proyectos como vengan del JSON.
   const initialList = [];
   if (data.about) initialList.push(data.about);
   initialList.push(...(data.projects || []));
   initialList.forEach((p) => strips.appendChild(buildStrip(p)));
 
-  main.appendChild(strips);
+  const main = h('main', { class: 'page page-home' }, header, strips);
   mount(main);
 
-  // preparar infinito (sólo con projects, no el about)
+  // El infinito sólo vuelve a barajar los `projects` (no incluye el about).
   InfState.stripsEl = strips;
-  setupInfiniteScroll(data.projects || [], PageSignal());
+  setupInfiniteScroll(data.projects || [], pageAbort.signal);
 }
+
 
 // ============================================================================
 // PROYECTO
+// ----------------------------------------------------------------------------
+// Estructura:
+//   .proj-margin--top   ← 20dvh con un dot centrado
+//   .proj-body          ← descripción + ficha técnica
+//   .gallery            ← imágenes + textos + audios en el orden del JSON
+//   .proj-margin--bottom ← 20dvh con dot
+//   .home-link-wrap     ← "back to home" (+ link extra sólo en el about)
 // ============================================================================
-function makeRow(k, v) {
-  const li = document.createElement('li');
-  const kEl = document.createElement('span');
-  kEl.className = 'k';
-  kEl.textContent = k;
-  const vEl = document.createElement('span');
-  vEl.className = 'v';
-  vEl.textContent = v;
-  li.append(kEl, vEl);
-  return li;
+
+function buildFichaRow(key, value) {
+  return h('li', {},
+    h('span', { class: 'k', textContent: key }),
+    h('span', { class: 'v', textContent: value }),
+  );
 }
 
 function buildFicha(p) {
-  const aside = document.createElement('aside');
-  aside.className = 'ficha';
-  const ul = document.createElement('ul');
-  if (p.tipo) ul.appendChild(makeRow('type', p.tipo));
-  if (p.lugar) ul.appendChild(makeRow('place', p.lugar));
-  if (p.fecha) ul.appendChild(makeRow('date', p.fecha));
+  const ul = h('ul');
+  if (p.tipo)  ul.appendChild(buildFichaRow('type',  p.tipo));
+  if (p.lugar) ul.appendChild(buildFichaRow('place', p.lugar));
+  if (p.fecha) ul.appendChild(buildFichaRow('date',  p.fecha));
   if (Array.isArray(p.equipo)) {
     p.equipo.forEach(({ nombre, rol }) => {
       if (!nombre) return;
-      ul.appendChild(makeRow(rol || 'team', nombre));
+      ul.appendChild(buildFichaRow(rol || 'team', nombre));
     });
   }
-  aside.appendChild(ul);
-  return aside;
+  return h('aside', { class: 'ficha' }, ul);
 }
 
 function buildDescription(p) {
   if (!p.descripcion && !p.nombre) return null;
-  const div = document.createElement('div');
-  div.className = 'desc';
-  const h2 = document.createElement('h2');
-  h2.textContent = p.nombre || p.slug;
-  div.appendChild(h2);
-  if (p.descripcion) {
-    const pEl = document.createElement('p');
-    pEl.textContent = p.descripcion;
-    div.appendChild(pEl);
-  }
-  return div;
+  const children = [h('h2', { textContent: p.nombre || p.slug })];
+  if (p.descripcion) children.push(h('p', { textContent: p.descripcion }));
+  return h('div', { class: 'desc' }, ...children);
 }
 
+/** Devuelve las URLs de todas las imágenes (para el lightbox). */
 function galleryImageUrls(p) {
   if (Array.isArray(p.contenido) && p.contenido.length) {
     return p.contenido
       .filter((it) => it.tipo === 'imagen')
       .map((it) => projectImgUrl(p.slug, it.src));
   }
-  const n = p.imgCount || 0;
   const out = [];
-  for (let i = 1; i <= n; i++) out.push(projectImgUrl(p.slug, i));
+  for (let i = 1; i <= (p.imgCount || 0); i++) out.push(projectImgUrl(p.slug, i));
   return out;
 }
 
-let currentAudio = null;
-
-function fmtTime(t) {
-  if (!isFinite(t)) return '0:00';
-  const m = Math.floor(t / 60);
-  const s = Math.floor(t % 60).toString().padStart(2, '0');
-  return m + ':' + s;
-}
-
-function buildAudioBlock(slug, item) {
-  const wrap = document.createElement('div');
-  wrap.className = 'audio-block';
-
-  const player = document.createElement('div');
-  player.className = 'audio-player';
-
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'audio-player__btn';
-  btn.textContent = '▶ play';
-
-  const time = document.createElement('span');
-  time.className = 'audio-player__time';
-  time.textContent = '0:00';
-
-  const bar = document.createElement('div');
-  bar.className = 'audio-player__bar';
-  const fill = document.createElement('div');
-  fill.className = 'audio-player__fill';
-  bar.appendChild(fill);
-
-  const audio = new Audio();
-  audio.src = projectsAsset(slug, item.src);
-  audio.preload = 'metadata';
-
-  btn.addEventListener('click', () => {
-    if (audio.paused) {
-      if (currentAudio && currentAudio !== audio) currentAudio.pause();
-      audio.play();
-      currentAudio = audio;
-      btn.textContent = '❚❚ pause';
-    } else {
-      audio.pause();
-      btn.textContent = '▶ play';
-    }
-  });
-
-  audio.addEventListener('timeupdate', () => {
-    time.textContent = fmtTime(audio.currentTime);
-    if (audio.duration) {
-      fill.style.width = (audio.currentTime / audio.duration * 100) + '%';
-    }
-  });
-  audio.addEventListener('ended', () => {
-    btn.textContent = '▶ play';
-    fill.style.width = '0%';
-  });
-  bar.addEventListener('click', (e) => {
-    if (!audio.duration) return;
-    const r = bar.getBoundingClientRect();
-    audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
-  });
-
-  player.append(btn, bar, time);
-  wrap.appendChild(player);
-  return wrap;
-}
-
 function buildGallery(p) {
-  const gallery = document.createElement('div');
-  gallery.className = 'gallery';
+  const gallery = h('div', { class: 'gallery' });
   const allImageUrls = galleryImageUrls(p);
-  let imgIdx = 0;
 
-  const attachImgClick = (imgEl) => {
+  // Índice "visual" de imagen (ignora textos/audios) para abrir el lightbox en la correcta.
+  let imgIdx = 0;
+  const makeGalleryImg = (src, alt) => {
     const myIdx = imgIdx++;
-    imgEl.addEventListener('click', () => {
-      Lightbox.open(allImageUrls, myIdx, imgEl);
-    });
+    const img = h('img', { src, alt, loading: 'lazy', class: 'gallery__img' });
+    img.addEventListener('click', () => Lightbox.open(allImageUrls, myIdx, img));
+    return img;
   };
 
-  if (Array.isArray(p.contenido) && p.contenido.length > 0) {
+  if (Array.isArray(p.contenido) && p.contenido.length) {
+    // Modo rico: el JSON define orden y tipo de cada bloque.
     p.contenido.forEach((item) => {
       if (item.tipo === 'imagen') {
-        const img = document.createElement('img');
-        img.src = projectImgUrl(p.slug, item.src);
-        img.alt = `${p.nombre || p.slug} — ${item.src}`;
-        img.loading = 'lazy';
-        img.className = 'gallery__img';
-        attachImgClick(img);
-        gallery.appendChild(img);
+        gallery.appendChild(makeGalleryImg(projectImgUrl(p.slug, item.src), `${p.nombre || p.slug} — ${item.src}`));
       } else if (item.tipo === 'texto') {
-        const t = document.createElement('blockquote');
-        t.className = 'text-block';
-        t.textContent = item.texto || item.contenido || '';
-        gallery.appendChild(t);
+        gallery.appendChild(h('blockquote', { class: 'text-block', textContent: item.texto || '' }));
       } else if (item.tipo === 'audio') {
         gallery.appendChild(buildAudioBlock(p.slug, item));
       }
     });
   } else if (p.imgCount) {
+    // Modo simple: sólo imgCount, numeradas 1..N.
     for (let i = 1; i <= p.imgCount; i++) {
-      const img = document.createElement('img');
-      img.src = projectImgUrl(p.slug, i);
-      img.alt = `${p.nombre || p.slug} — ${i}`;
-      img.loading = 'lazy';
-      img.className = 'gallery__img';
-      attachImgClick(img);
-      gallery.appendChild(img);
+      gallery.appendChild(makeGalleryImg(projectImgUrl(p.slug, i), `${p.nombre || p.slug} — ${i}`));
     }
   }
 
   return gallery;
 }
 
+/** Construye los dos margenes (arriba/abajo) de 20dvh con un dot centrado. */
+const buildProjMargin = (pos) =>
+  h('div', { class: `proj-margin proj-margin--${pos}` }, h('span', { class: 'dot' }));
+
+function buildHomeLinkWrap(currentSlug, isAbout) {
+  const homeLink = h('a', {
+    class: 'home-link',
+    href: urlForSlug(null),
+    textContent: 'back to home',
+  });
+  homeLink.addEventListener('click', (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    navigateTo(null, { fromSlug: currentSlug });
+  });
+
+  const extra = isAbout ? h('a', {
+    class: 'extra-link',
+    href: 'https://meowrhino.studio',
+    target: '_blank',
+    rel: 'noopener noreferrer',
+    textContent: 'web: meowrhino.studio',
+  }) : null;
+
+  return h('div', { class: 'home-link-wrap' }, homeLink, extra);
+}
+
 function renderProject(data, slug) {
   const p = findProject(data, slug);
-  if (!p) { renderNotFound(slug); return; }
+  if (!p) return renderNotFound(slug);
 
   const title = p.nombre || p.slug;
   document.title = `${title} — ${data.meta?.nombre || ''}`.trim();
 
-  const main = document.createElement('main');
-  main.className = 'page page-project';
-
-  const marginTop = document.createElement('div');
-  marginTop.className = 'proj-margin proj-margin--top';
-  marginTop.innerHTML = '<span class="dot"></span>';
-  main.appendChild(marginTop);
-
-  const body = document.createElement('section');
-  body.className = 'proj-body';
+  const body = h('section', { class: 'proj-body' });
   const desc = buildDescription(p);
   if (desc) body.appendChild(desc);
   body.appendChild(buildFicha(p));
-  main.appendChild(body);
-
-  main.appendChild(buildGallery(p));
-
-  const marginBottom = document.createElement('div');
-  marginBottom.className = 'proj-margin proj-margin--bottom';
-  marginBottom.innerHTML = '<span class="dot"></span>';
-  main.appendChild(marginBottom);
-
-  const homeWrap = document.createElement('div');
-  homeWrap.className = 'home-link-wrap';
-  const homeLink = document.createElement('a');
-  homeLink.className = 'home-link';
-  homeLink.href = urlForSlug(null);
-  homeLink.textContent = 'back to home';
-  homeLink.addEventListener('click', (e) => {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-    e.preventDefault();
-    navigateTo(null, { fromSlug: slug });
-  });
-  homeWrap.appendChild(homeLink);
 
   const isAbout = data.about && data.about.slug === slug;
-  if (isAbout) {
-    const extra = document.createElement('a');
-    extra.className = 'extra-link';
-    extra.href = 'https://meowrhino.studio';
-    extra.target = '_blank';
-    extra.rel = 'noopener noreferrer';
-    extra.textContent = 'web: meowrhino.studio';
-    homeWrap.appendChild(extra);
-  }
-
-  main.appendChild(homeWrap);
-
+  const main = h('main', { class: 'page page-project' },
+    buildProjMargin('top'),
+    body,
+    buildGallery(p),
+    buildProjMargin('bottom'),
+    buildHomeLinkWrap(slug, isAbout),
+  );
   mount(main);
 }
 
 function renderNotFound(slug) {
-  const main = document.createElement('main');
-  main.className = 'page page-notfound';
-  main.innerHTML = `<p>no se encontró el proyecto <code>${slug || ''}</code></p>`;
-  const link = document.createElement('a');
-  link.className = 'home-link';
-  link.href = urlForSlug(null);
-  link.textContent = '← home';
+  const link = h('a', {
+    class: 'home-link',
+    href: urlForSlug(null),
+    textContent: 'back to home',
+  });
   link.addEventListener('click', (e) => { e.preventDefault(); navigateTo(null); });
-  main.appendChild(link);
+
+  const main = h('main', { class: 'page page-notfound' },
+    h('p', {},
+      'no se encontró el proyecto ',
+      h('code', { textContent: slug || '' }),
+    ),
+    link,
+  );
   mount(main);
 }
 
+
 // ============================================================================
-// Router + iris flow
+// ROUTER + FLOW DE TRANSICIÓN
+// ----------------------------------------------------------------------------
+// Flujo de `navigateTo(slug)`:
+//   1. marcar iris busy (bloquea clicks durante la animación)
+//   2. iris.cover desde el punto clicado  → pantalla en negro
+//   3. pushState + render de la página nueva (invisible bajo el negro)
+//   4. iris.reveal desde el centro (o desde el dot de la strip si volvemos a home)
+//
+// `popstate` (botón atrás del navegador) usa la misma lógica pero cubre desde
+// el centro del viewport (no sabemos dónde clicaron).
 // ============================================================================
 
-let lastSlug = null;
-let pageAbort = null;
-function PageSignal() { return pageAbort ? pageAbort.signal : undefined; }
-
-function removeCurrentPage() {
-  document.querySelectorAll('main.page').forEach((m) => m.remove());
-}
+let lastSlug = null;      // slug actualmente renderizado (null = home)
+let pageAbort = null;     // AbortController que cancela los listeners de la página saliente
 
 function mount(main) {
-  removeCurrentPage();
+  // Desmontar página anterior
+  document.querySelector('main.page')?.remove();
   if (pageAbort) pageAbort.abort();
   pageAbort = new AbortController();
+
+  // Reset de audio compartido (el <audio> de la página anterior se irá con el DOM).
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+
+  // Insertar antes del iris para que el overlay quede siempre por encima.
   const iris = document.querySelector('.iris');
   if (iris) document.body.insertBefore(main, iris);
   else document.body.appendChild(main);
-  window.scrollTo(0, 0);
+
+  scrollTo(0, 0);
 }
 
 function render(slug) {
@@ -698,27 +717,26 @@ function render(slug) {
   lastSlug = slug || null;
 }
 
-function centerOfViewport() {
-  return { x: innerWidth / 2, y: innerHeight / 2 };
-}
+const centerOfViewport = () => ({ x: innerWidth / 2, y: innerHeight / 2 });
 
+/** Encuentra el dot del strip de un proyecto, scrolleando si está fuera de vista. */
 function findStripDotCenter(slug) {
   const strip = document.querySelector(`.strip[data-slug="${CSS.escape(slug)}"]`);
   if (!strip) return centerOfViewport();
   const dot = strip.querySelector('.dot');
-  const rectOf = () => (dot || strip).getBoundingClientRect();
-  let r = rectOf();
+  const rect = () => (dot || strip).getBoundingClientRect();
+  let r = rect();
   if (r.top < 0 || r.bottom > innerHeight) {
     strip.scrollIntoView({ block: 'center', behavior: 'instant' });
-    r = rectOf();
+    r = rect();
   }
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }
 
 async function navigateTo(slug, opts = {}) {
-  if (Iris.isBusy()) return;
+  if (Iris.isBusy()) return;                  // ya hay una transición en curso
   const targetURL = urlForSlug(slug);
-  if (window.location.pathname === targetURL) return;
+  if (location.pathname === targetURL) return; // mismo destino, no hacemos nada
 
   const goingToProject = !!slug;
   const origin = (typeof opts.originX === 'number')
@@ -727,16 +745,16 @@ async function navigateTo(slug, opts = {}) {
 
   Iris.setBusy(true);
   try {
-    // Fase 1: iris cubre (círculo negro que se abre desde origen)
     await Iris.cover(origin.x, origin.y);
 
-    // breve pausa en negro + swap de contenido
     history.pushState({ slug }, '', targetURL);
     render(slug);
     await Iris.pause();
-    await new Promise((r) => requestAnimationFrame(r));
+    await new Promise((r) => requestAnimationFrame(r)); // espera a que el DOM esté estable
 
-    // Fase 2: iris revela (agujero que se abre desde destino)
+    // Destino del reveal:
+    //  · si vamos a un proyecto → centro del viewport
+    //  · si volvemos a la home  → dot del strip del proyecto desde el que volvemos
     const target = goingToProject
       ? centerOfViewport()
       : (() => {
@@ -750,7 +768,7 @@ async function navigateTo(slug, opts = {}) {
   }
 }
 
-window.addEventListener('popstate', async () => {
+addEventListener('popstate', async () => {
   const slug = slugFromPath();
   if (slug === lastSlug) return;
   if (Iris.isBusy()) return;
@@ -764,16 +782,15 @@ window.addEventListener('popstate', async () => {
     await Iris.pause();
     await new Promise((r) => requestAnimationFrame(r));
 
-    const target = (!slug && prevSlug)
-      ? findStripDotCenter(prevSlug)
-      : centerOfViewport();
+    const target = (!slug && prevSlug) ? findStripDotCenter(prevSlug) : centerOfViewport();
     await Iris.reveal(target.x, target.y);
   } finally {
     Iris.setBusy(false);
   }
 });
 
-document.addEventListener('keydown', (e) => {
+// ESC en una página de proyecto = volver a home (a menos que el lightbox esté abierto).
+addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (Lightbox.isOpen()) return;
   if (slugFromPath()) {
@@ -782,8 +799,9 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+
 // ============================================================================
-// Init
+// INIT
 // ============================================================================
 (async () => {
   try {
@@ -791,9 +809,10 @@ document.addEventListener('keydown', (e) => {
     render(slugFromPath());
   } catch (err) {
     console.error(err);
-    const m = document.createElement('main');
-    m.className = 'page';
-    m.innerHTML = `<p style="padding:2rem 1.25rem">error: ${err.message}</p>`;
-    document.body.appendChild(m);
+    document.body.appendChild(
+      h('main', { class: 'page' },
+        h('p', { style: 'padding:2rem 1.25rem', textContent: `error: ${err.message}` })
+      )
+    );
   }
 })();
