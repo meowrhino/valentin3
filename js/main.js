@@ -28,6 +28,10 @@ function urlForSlug(slug) {
 
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
+
 // ---------- Utilidades ----------
 function shuffle(arr) {
   const a = arr.slice();
