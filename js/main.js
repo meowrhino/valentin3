@@ -123,12 +123,24 @@ const heroImgNumber = (p) => typeof p.imgHome === 'number' ? p.imgHome : 1;
 // IRIS — transición en dos fases
 // ----------------------------------------------------------------------------
 // Usamos un overlay a pantalla completa con un `mask-image` radial que
-// animamos para abrir/cerrar un círculo. Dos fases encadenadas:
+// animamos para abrir/cerrar un círculo. Cuatro animaciones disponibles,
+// agrupadas en dos ejes: estructura de máscara (cover/reveal) × dirección
+// del radio (creciente/decreciente):
 //
-//   1. COVER  · círculo NEGRO crece desde el punto de origen hasta tapar todo
-//              (inner=#000, outer=transparent en la máscara).
-//   2. REVEAL · un agujero TRANSPARENTE crece desde el punto de destino hasta
-//              descubrir la página nueva (inner=transparent, outer=#000).
+//                      crece 0 → max        encoge max → 0
+//   inner=#000        COVER (expande)       UNCOVER (encoge)
+//   inner=transparent REVEAL (expande)      CLOSE (encoge)
+//
+//   COVER   · círculo NEGRO crece desde un punto hasta tapar todo (expansión).
+//   REVEAL  · agujero TRANSPARENTE crece desde un punto descubriendo (expansión).
+//   CLOSE   · inverso del reveal: el agujero transparente se ENCOGE hasta un
+//             punto (el fondo entra desde los bordes y colapsa). Contracción.
+//   UNCOVER · inverso del cover: el círculo negro se ENCOGE hasta desaparecer,
+//             revelando la página. Contracción.
+//
+// Flujos:
+//   ABRIR  (a proyecto): cover(dot) → reveal(centro)    — dos expansiones.
+//   CERRAR (a home):     close(centro) → uncover(centro) — dos contracciones.
 //
 // Mientras el iris está animando marcamos `busy=true` y le damos
 // `pointer-events: auto` para bloquear clicks.
@@ -183,9 +195,31 @@ const Iris = (() => {
       (r) => setMask(x, y, r, false));
   }
 
+  // El agujero transparente se encoge hasta colapsar en (x,y). Empieza con
+  // todo visible y termina con todo tapado. Misma máscara que reveal, radio
+  // animado al revés. Se usa como primera fase del flujo CERRAR.
+  function close(x, y, duration = COVER_MS) {
+    ensure();
+    if (REDUCED_MOTION) { setMask(x, y, 0, false); return Promise.resolve(); }
+    return animateValue(maxRadius(x, y), 0, duration, easeInOutCubic,
+      (r) => setMask(x, y, r, false));
+  }
+
+  // El círculo negro se encoge hasta desaparecer. Empieza con todo tapado y
+  // termina con todo visible. Misma máscara que cover, radio animado al revés.
+  // Visualmente un punto negro colapsa en (x,y) revelando la nueva página.
+  // Segunda fase del flujo CERRAR (encadena con close para dar sensación
+  // continua de contracción hacia el centro).
+  function uncover(x, y, duration = REVEAL_MS) {
+    ensure();
+    if (REDUCED_MOTION) { setMask(x, y, 0, true); return Promise.resolve(); }
+    return animateValue(maxRadius(x, y), 0, duration, easeInOutCubic,
+      (r) => setMask(x, y, r, true));
+  }
+
   const pause = () => delay(PAUSE_MS);
 
-  return { cover, reveal, pause, setBusy, isBusy: () => busy };
+  return { cover, reveal, close, uncover, pause, setBusy, isBusy: () => busy };
 })();
 
 
@@ -680,14 +714,19 @@ function renderNotFound(slug) {
 // ============================================================================
 // ROUTER + FLOW DE TRANSICIÓN
 // ----------------------------------------------------------------------------
-// Flujo de `navigateTo(slug)`:
-//   1. marcar iris busy (bloquea clicks durante la animación)
-//   2. iris.cover desde el punto clicado  → pantalla en negro
-//   3. pushState + render de la página nueva (invisible bajo el negro)
-//   4. iris.reveal desde el centro (o desde el dot de la strip si volvemos a home)
+// Dos transiciones con semántica distinta:
 //
-// `popstate` (botón atrás del navegador) usa la misma lógica pero cubre desde
-// el centro del viewport (no sabemos dónde clicaron).
+//   ABRIR (a proyecto):  cover(dot) → render → reveal(centro)
+//     Dos expansiones: el iris "explota" desde el dot del strip hasta tapar
+//     todo, luego un agujero crece desde el centro mostrando el proyecto.
+//
+//   CERRAR (a home):     close(centro) → render → uncover(centro)
+//     Dos contracciones: el proyecto colapsa al centro (el negro entra desde
+//     los bordes), luego el punto negro residual se encoge revelando la home.
+//     En paralelo al negro scrolleamos al strip del proyecto de origen para
+//     que la home quede posicionada donde estaba el usuario.
+//
+// `popstate` (botón atrás) usa el mismo patrón.
 // ============================================================================
 
 let lastSlug = null;      // slug actualmente renderizado (null = home)
@@ -743,30 +782,43 @@ async function navigateTo(slug, opts = {}) {
   if (location.pathname === targetURL) return; // mismo destino, no hacemos nada
 
   const goingToProject = !!slug;
-  const origin = (typeof opts.originX === 'number')
-    ? { x: opts.originX, y: opts.originY }
-    : centerOfViewport();
 
   Iris.setBusy(true);
   try {
-    await Iris.cover(origin.x, origin.y);
+    if (goingToProject) {
+      // ABRIR: cover crece desde el dot clicado → reveal crece desde el centro.
+      const origin = (typeof opts.originX === 'number')
+        ? { x: opts.originX, y: opts.originY }
+        : centerOfViewport();
+      await Iris.cover(origin.x, origin.y);
 
-    history.pushState({ slug }, '', targetURL);
-    render(slug);
-    await Iris.pause();
-    await new Promise((r) => requestAnimationFrame(r)); // espera a que el DOM esté estable
+      history.pushState({ slug }, '', targetURL);
+      render(slug);
+      await Iris.pause();
+      await new Promise((r) => requestAnimationFrame(r));
 
-    // Destino del reveal:
-    //  · si vamos a un proyecto → centro del viewport
-    //  · si volvemos a la home  → dot del strip del proyecto desde el que volvemos
-    const target = goingToProject
-      ? centerOfViewport()
-      : (() => {
-          const anchor = opts.fromSlug || lastSlug;
-          return anchor ? findStripDotCenter(anchor) : centerOfViewport();
-        })();
+      const c = centerOfViewport();
+      await Iris.reveal(c.x, c.y);
+    } else {
+      // CERRAR: dos contracciones hacia el centro. Close hace colapsar el
+      // proyecto, uncover termina de encoger el punto negro residual.
+      const c = centerOfViewport();
+      await Iris.close(c.x, c.y);
 
-    await Iris.reveal(target.x, target.y);
+      history.pushState({ slug }, '', targetURL);
+      render(slug);
+
+      // Scroll (side effect) al strip del proyecto de origen durante la fase
+      // negra, para que al revelar la home esté ya posicionada.
+      const anchor = opts.fromSlug || lastSlug;
+      if (anchor) findStripDotCenter(anchor);
+
+      await Iris.pause();
+      await new Promise((r) => requestAnimationFrame(r));
+
+      const c2 = centerOfViewport();
+      await Iris.uncover(c2.x, c2.y);
+    }
   } finally {
     Iris.setBusy(false);
   }
@@ -777,17 +829,29 @@ addEventListener('popstate', async () => {
   if (slug === lastSlug) return;
   if (Iris.isBusy()) return;
 
+  const goingToProject = !!slug;
+  const prevSlug = lastSlug;
+
   Iris.setBusy(true);
   try {
     const c = centerOfViewport();
-    await Iris.cover(c.x, c.y);
-    const prevSlug = lastSlug;
-    render(slug);
-    await Iris.pause();
-    await new Promise((r) => requestAnimationFrame(r));
 
-    const target = (!slug && prevSlug) ? findStripDotCenter(prevSlug) : centerOfViewport();
-    await Iris.reveal(target.x, target.y);
+    if (goingToProject) {
+      // Volvemos a un proyecto: sin coords del click, usamos el centro.
+      await Iris.cover(c.x, c.y);
+      render(slug);
+      await Iris.pause();
+      await new Promise((r) => requestAnimationFrame(r));
+      await Iris.reveal(c.x, c.y);
+    } else {
+      // Volvemos a home: mismo patrón close → uncover que navigateTo.
+      await Iris.close(c.x, c.y);
+      render(slug);
+      if (prevSlug) findStripDotCenter(prevSlug); // scroll al strip de origen
+      await Iris.pause();
+      await new Promise((r) => requestAnimationFrame(r));
+      await Iris.uncover(c.x, c.y);
+    }
   } finally {
     Iris.setBusy(false);
   }
