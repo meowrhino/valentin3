@@ -80,7 +80,7 @@ valentin3/
 
 - **Home** (`/`): cabecera + lista de tiras (una por proyecto). Al llegar al final se siguen generando aleatoriamente (infinite scroll).
 - **Proyecto** (`/bolder`, `/lynn`, etc.): margen superior con un punto, ficha técnica + descripción, galería vertical de imágenes (con textos y audios intercalados si los hay), margen inferior con otro punto, y botón **back to home** al final.
-- **About** (`/_valentin`): es un proyecto más, pero en lugar de aparecer al final de la home sale el primero. Bajo el botón de home tiene además un enlace a `meowrhino.studio`.
+- **About** (`/_valentin`): es un proyecto más, pero en lugar de aparecer al final de la home sale el primero.
 - **Transición**: al clicar una tira se abre un círculo negro desde el punto, cubre todo, y al llegar a la nueva página se abre otro círculo que la descubre desde el centro. Al volver, el círculo que descubre se abre desde el punto de la tira del proyecto que acabas de ver.
 - **Lightbox**: al clicar una foto del proyecto se amplía en pantalla completa. Se cierra con ESC, click fuera, o las X de las esquinas. Flechas ← → para ir a la anterior/siguiente.
 
@@ -215,16 +215,20 @@ Editar `data.json` → `about`:
 
 ---
 
-## CABECERA DE LA HOME (nombre, tagline, email)
+## CABECERA DE LA HOME (nombre, tagline, email, instagram)
 
 Se edita en `data.json` → `meta`:
 ```json
 "meta": {
   "nombre": "valentin barrio",
   "tagline": "creative based in europe",
-  "email": "email@work.com"
+  "email": "valentinbarrio@gmail.com",
+  "instagram": "valentinbarrio"
 }
 ```
+
+> `instagram` es solo el handle, sin `@` ni URL. El sitio lo enlaza a `instagram.com/<handle>`.
+> Si lo quitas o lo dejas vacío, no aparece nada en la cabecera.
 
 ---
 

@@ -2,21 +2,22 @@
   "meta": {
     "nombre": "valentin barrio",
     "tagline": "creative based in europe",
-    "email": "email@work.com"
+    "email": "valentinbarrio@gmail.com",
+    "instagram": "valentinbarrio"
   },
   "about": {
     "slug": "_valentin",
     "nombre": "valentin barrio",
-    "imgHome": 3,
+    "imgHome": 4,
     "tipo": "Photography, Art Direction, Visual Storytelling",
     "lugar": "Barcelona",
     "descripcion": "Photographer and visual artist based in Barcelona. Focused on capturing the raw energy of live events, fashion editorials, and intimate portraits.",
     "contenido": [
-      { "tipo": "imagen", "src": 1 },
+      { "tipo": "imagen", "src": 4 },
       { "tipo": "imagen", "src": 2 },
       { "tipo": "texto", "texto": "Every frame is a conversation between what happened and what I chose to see." },
       { "tipo": "imagen", "src": 3 },
-      { "tipo": "imagen", "src": 4 },
+      { "tipo": "imagen", "src": 1 },
       { "tipo": "audio", "src": "WhatsApp Audio 2026-04-09 at 11.23.28.opus" },
       { "tipo": "imagen", "src": 5 },
       { "tipo": "imagen", "src": 6 },
@@ -158,6 +159,36 @@
       "equipo": [
         { "nombre": "Hey Ami", "rol": "" }
       ]
+    },
+    {
+      "slug": "insomnia",
+      "nombre": "Insomnia",
+      "imgHome": 1,
+      "imgCount": 10,
+      "tipo": "press",
+      "lugar": "Barcelona",
+      "fecha": "—",
+      "descripcion": "Por completar."
+    },
+    {
+      "slug": "quiet",
+      "nombre": "Quiet",
+      "imgHome": 1,
+      "imgCount": 10,
+      "tipo": "press",
+      "lugar": "Barcelona",
+      "fecha": "—",
+      "descripcion": "Por completar."
+    },
+    {
+      "slug": "fragments",
+      "nombre": "Fragments",
+      "imgHome": 1,
+      "imgCount": 11,
+      "tipo": "press",
+      "lugar": "Barcelona",
+      "fecha": "—",
+      "descripcion": "Por completar."
     }
   ]
 }

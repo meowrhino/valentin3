@@ -539,6 +539,15 @@ function renderHome(data) {
     data.meta?.email
       ? h('a', { class: 'email', href: `mailto:${data.meta.email}`, textContent: data.meta.email })
       : null,
+    data.meta?.instagram
+      ? h('a', {
+          class: 'instagram',
+          href: `https://instagram.com/${data.meta.instagram}`,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          textContent: `@${data.meta.instagram}`,
+        })
+      : null,
   );
 
   const strips = h('div', { class: 'strips' });
@@ -565,7 +574,7 @@ function renderHome(data) {
 //   .proj-body          ← descripción + ficha técnica
 //   .gallery            ← imágenes + textos + audios en el orden del JSON
 //   .proj-margin--bottom ← 20dvh con dot
-//   .home-link-wrap     ← "back to home" (+ link extra sólo en el about)
+//   .home-link-wrap     ← "back to home"
 // ============================================================================
 
 function buildFichaRow(key, value) {
@@ -646,7 +655,7 @@ function buildGallery(p) {
 const buildProjMargin = (pos) =>
   h('div', { class: `proj-margin proj-margin--${pos}` }, h('span', { class: 'dot' }));
 
-function buildHomeLinkWrap(currentSlug, isAbout) {
+function buildHomeLinkWrap(currentSlug) {
   const homeLink = h('a', {
     class: 'home-link',
     href: urlForSlug(null),
@@ -658,15 +667,7 @@ function buildHomeLinkWrap(currentSlug, isAbout) {
     navigateTo(null, { fromSlug: currentSlug });
   });
 
-  const extra = isAbout ? h('a', {
-    class: 'extra-link',
-    href: 'https://meowrhino.studio',
-    target: '_blank',
-    rel: 'noopener noreferrer',
-    textContent: 'web: meowrhino.studio',
-  }) : null;
-
-  return h('div', { class: 'home-link-wrap' }, homeLink, extra);
+  return h('div', { class: 'home-link-wrap' }, homeLink);
 }
 
 function renderProject(data, slug) {
@@ -681,13 +682,12 @@ function renderProject(data, slug) {
   if (desc) body.appendChild(desc);
   body.appendChild(buildFicha(p));
 
-  const isAbout = data.about && data.about.slug === slug;
   const main = h('main', { class: 'page page-project' },
     buildProjMargin('top'),
     body,
     buildGallery(p),
     buildProjMargin('bottom'),
-    buildHomeLinkWrap(slug, isAbout),
+    buildHomeLinkWrap(slug),
   );
   mount(main);
 }

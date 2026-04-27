@@ -70,14 +70,18 @@ main.page {
   margin-top: 0.2rem;
   line-height: 1.15;
 }
-.home-header .email {
-  display: inline-block;
+.home-header .email,
+.home-header .instagram {
+  display: block;
+  width: fit-content;
   font-size: 0.85rem;
   color: var(--fg-dim);
-  margin-top: 0.75rem;
   transition: color 0.2s ease;
 }
-.home-header .email:hover { color: var(--fg); }
+.home-header .email { margin-top: 0.75rem; }
+.home-header .instagram { margin-top: 0.25rem; }
+.home-header .email:hover,
+.home-header .instagram:hover { color: var(--fg); }
 
 /* Strips edge-to-edge */
 .strips {
@@ -287,13 +291,6 @@ main.page {
   transition: color 0.2s ease;
 }
 .home-link:hover { color: var(--fg); }
-.extra-link {
-  font-size: 0.8rem;
-  color: var(--fg-dim);
-  letter-spacing: 0.02em;
-  transition: color 0.2s ease;
-}
-.extra-link:hover { color: var(--fg); }
 
 /* Not found */
 .page-notfound {
@@ -389,7 +386,7 @@ main.page {
 
 /* Accesibilidad: reducir movimiento */
 @media (prefers-reduced-motion: reduce) {
-  .strip img, .gallery__img, .home-link, .email, .lightbox__img, .lightbox__close {
+  .strip img, .gallery__img, .home-link, .email, .instagram, .lightbox__img, .lightbox__close {
     transition: none !important;
   }
 }
