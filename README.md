@@ -147,6 +147,23 @@ El orden en la home es el mismo que en el array `projects` de `data.json`. Mueve
 
 > El `_valentin` (about) siempre aparece primero, independientemente del orden.
 
+### 🎞️ Banners de vídeo intercalados
+
+Si quieres meter un loop de vídeo decorativo entre proyectos (no clickable, ~5 seg):
+
+1. Mete el vídeo en `_BANNERS/` (carpeta nueva en la raíz). Formato recomendado: `webm` 3:1, < 1 MB.
+2. En `data.json`, dentro del array `projects`, añade un objeto con la clave `banner` en la posición donde quieras que aparezca:
+   ```json
+   "projects": [
+     { "slug": "lynn", "nombre": "Lynn", "visible": true, ... },
+     { "banner": "loop1.webm" },
+     { "slug": "yu", "nombre": "Yu", "visible": true, ... },
+     …
+   ]
+   ```
+
+> Los banners **solo aparecen en la pasada inicial**, no en el scroll infinito (el aleatorio solo recicla proyectos clickables). Más detalles en `_BANNERS/README.md`.
+
 ---
 
 ## PORTADA del strip de la home

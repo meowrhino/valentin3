@@ -29,6 +29,9 @@ const projectsAsset = (slug, file) => asset(`_PROJECTS/${slug}/${file}`);
 /** URL a la imagen N-ésima de un proyecto (se asume .webp). */
 const projectImgUrl = (slug, n) => projectsAsset(slug, `${n}.webp`);
 
+/** URL a un archivo de banner (vídeo decorativo intercalado en la home). */
+const bannerAsset = (file) => asset(`_BANNERS/${file}`);
+
 /** Lee el slug actual desde la URL, o null si estamos en la home. */
 function slugFromPath() {
   let p = location.pathname;
@@ -529,6 +532,23 @@ function buildStripMedia(slug, alt) {
   return initial;
 }
 
+/** Crea un banner decorativo (vídeo en bucle, no clickable) para intercalar
+ *  en la home entre proyectos. `item.banner` es el nombre del archivo dentro
+ *  de `_BANNERS/`. Comparte forma con `.strip` (3:1 full width) pero sin
+ *  link, hover ni dots. */
+function buildBanner(item) {
+  const video = h('video', {
+    src: bannerAsset(item.banner),
+    autoplay: true,
+    muted: true,
+    loop: true,
+    playsInline: true,
+    preload: 'metadata',
+    class: 'strip__media',
+  });
+  return h('div', { class: 'strip strip--banner', 'aria-hidden': 'true' }, video);
+}
+
 /** Crea un <a class="strip"> con medio + overlay + dos dots para un proyecto.
  *  Hover: aparece velo oscuro + título centrado, los dos dots se separan.
  *  Click: la transición de iris arranca desde ambos dots simultáneamente. */
@@ -624,20 +644,27 @@ function renderHome(data) {
   );
 
   const strips = h('div', { class: 'strips' });
-  // Orden inicial: about primero, luego los proyectos visibles (visible !== false).
-  // Default = visibles: si el campo falta, se considera visible.
-  const visibleProjects = (data.projects || []).filter(p => p.visible !== false);
+  // Orden inicial: about primero, luego los items del array `projects` en
+  // orden — proyectos visibles + banners. Los banners (items con `banner`)
+  // son decorativos, no clickables, y solo aparecen en la pasada inicial.
+  const orderedItems = (data.projects || []).filter((it) => {
+    if (it.banner) return true;
+    return it.visible !== false;
+  });
   const initialList = [];
   if (data.about) initialList.push(data.about);
-  initialList.push(...visibleProjects);
-  initialList.forEach((p) => strips.appendChild(buildStrip(p)));
+  initialList.push(...orderedItems);
+  initialList.forEach((it) => {
+    strips.appendChild(it.banner ? buildBanner(it) : buildStrip(it));
+  });
 
   const main = h('main', { class: 'page page-home' }, header, strips);
   mount(main);
 
-  // El infinito sólo vuelve a barajar los `projects` visibles (no incluye el about).
+  // El infinito sólo baraja los proyectos visibles (sin about ni banners).
+  const shufflable = (data.projects || []).filter(p => !p.banner && p.visible !== false);
   InfState.stripsEl = strips;
-  setupInfiniteScroll(visibleProjects, pageAbort.signal);
+  setupInfiniteScroll(shufflable, pageAbort.signal);
 }
 
 

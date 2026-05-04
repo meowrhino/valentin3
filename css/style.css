@@ -145,6 +145,12 @@ main.page {
 .strip:hover .dot--left  { transform: translate(calc(-50% - 80px), -50%); }
 .strip:hover .dot--right { transform: translate(calc(-50% + 80px), -50%); }
 
+/* Banner decorativo: misma forma que strip pero sin interacción.
+ * Se usa con un <div class="strip strip--banner"> envolviendo un <video>. */
+.strip--banner { cursor: default; }
+.strip--banner .strip__overlay,
+.strip--banner .dot { display: none; }
+
 /* ============ PROYECTO ============ */
 .page-project {
   padding: 0;
