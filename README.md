@@ -149,6 +149,26 @@ El orden en la home es el mismo que en el array `projects` de `data.json`. Mueve
 
 ---
 
+## PORTADA del strip de la home
+
+Cada proyecto necesita una **portada dedicada** dentro de su carpeta:
+```
+_PROJECTS/mi-proyecto/
+├── portada.webp     ← esta es la imagen del strip de la home
+├── 1.webp           ← galería del proyecto
+├── 2.webp
+└── …
+```
+
+- **Formato recomendado:** `webp` con aspect ratio **3:1** (ej. 2000×667 px), peso < 300 KB.
+- **Otros formatos aceptados:** `jpg`, `png`. La web los detecta automáticamente.
+- **Vídeo:** también vale `mp4`, `webm` o `mov`. Se reproduce automuteado en bucle. Mismo aspect 3:1.
+- **El archivo se llama siempre `portada`** + la extensión que toque (`portada.webp`, `portada.mp4`, etc.).
+
+> Si un proyecto no tiene `portada.<ext>`, el strip cae a `1.webp` automáticamente como último recurso. Pero si está oculto (`visible: false`) tampoco aparece en la home, así que no pasa nada.
+
+---
+
 ## GALERÍA RICA (con textos y audios intercalados)
 
 Si un proyecto solo tiene imágenes, no hace falta hacer nada — la web detecta sola las imágenes numeradas en la carpeta. Pero si quieres **intercalar textos o audios**, añade un campo `contenido` con la lista exacta de bloques:

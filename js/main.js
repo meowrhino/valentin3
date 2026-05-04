@@ -456,20 +456,71 @@ const InfState = {
   stripsEl: null, // contenedor DOM donde se insertan las nuevas strips
 };
 
-/** Crea un <a class="strip"> con imagen + dot para un proyecto. */
-function buildStrip(p) {
-  const img = h('img', {
-    src: projectImgUrl(p.slug, 1),
-    alt: p.nombre || p.slug,
+/** Extensiones aceptadas para `portada.<ext>`. Se prueban en este orden:
+ *  primero imágenes (webp, jpg, png), luego vídeo (mp4, webm, mov). */
+const PORTADA_IMAGE_EXTS = ['webp', 'jpg', 'png'];
+const PORTADA_VIDEO_EXTS = ['mp4', 'webm', 'mov'];
+const PORTADA_EXTS = [...PORTADA_IMAGE_EXTS, ...PORTADA_VIDEO_EXTS];
+
+/** Construye el medio del strip: <img class="strip__media"> por defecto.
+ *  Si `portada.webp` no existe, encadena fallback por extensión hasta
+ *  encontrar una que cargue. Si la extensión es de vídeo, reemplaza el
+ *  <img> con un <video> autoplay loop muted. Si todas fallan, último
+ *  recurso silencioso: <img src="1.webp"> (compat con proyectos sin
+ *  portada dedicada). */
+function buildStripMedia(slug, alt) {
+  let i = 0;
+
+  const makeImg = (ext) => h('img', {
+    src: projectsAsset(slug, `portada.${ext}`),
+    alt,
     loading: 'lazy',
+    class: 'strip__media',
   });
+
+  const makeVideo = (ext) => h('video', {
+    src: projectsAsset(slug, `portada.${ext}`),
+    autoplay: true,
+    muted: true,
+    loop: true,
+    playsInline: true,
+    preload: 'metadata',
+    class: 'strip__media',
+  });
+
+  const onError = (current) => {
+    i++;
+    if (i >= PORTADA_EXTS.length) {
+      const fallback = h('img', {
+        src: projectImgUrl(slug, 1),
+        alt,
+        loading: 'lazy',
+        class: 'strip__media',
+      });
+      current.replaceWith(fallback);
+      return;
+    }
+    const nextExt = PORTADA_EXTS[i];
+    const next = PORTADA_VIDEO_EXTS.includes(nextExt) ? makeVideo(nextExt) : makeImg(nextExt);
+    next.addEventListener('error', () => onError(next));
+    current.replaceWith(next);
+  };
+
+  const initial = makeImg(PORTADA_EXTS[0]);
+  initial.addEventListener('error', () => onError(initial));
+  return initial;
+}
+
+/** Crea un <a class="strip"> con medio + dot para un proyecto. */
+function buildStrip(p) {
+  const media = buildStripMedia(p.slug, p.nombre || p.slug);
   const dot = h('span', { class: 'dot' });
   const a = h('a', {
     class: 'strip',
     href: urlForSlug(p.slug),
     dataset: { slug: p.slug },
     'aria-label': p.nombre || p.slug,
-  }, img, dot);
+  }, media, dot);
 
   a.addEventListener('click', (e) => {
     // respetar cmd/ctrl/shift-click (abrir en pestaña nueva, etc.)
