@@ -116,8 +116,6 @@ function findProject(data, slug) {
   return (data.projects || []).find((p) => p.slug === slug) || null;
 }
 
-const heroImgNumber = (p) => typeof p.imgHome === 'number' ? p.imgHome : 1;
-
 
 // ============================================================================
 // IRIS — transición en dos fases
@@ -461,7 +459,7 @@ const InfState = {
 /** Crea un <a class="strip"> con imagen + dot para un proyecto. */
 function buildStrip(p) {
   const img = h('img', {
-    src: projectImgUrl(p.slug, heroImgNumber(p)),
+    src: projectImgUrl(p.slug, 1),
     alt: p.nombre || p.slug,
     loading: 'lazy',
   });
@@ -551,18 +549,20 @@ function renderHome(data) {
   );
 
   const strips = h('div', { class: 'strips' });
-  // Orden inicial: about primero, luego los proyectos como vengan del JSON.
+  // Orden inicial: about primero, luego los proyectos visibles (visible !== false).
+  // Default = visibles: si el campo falta, se considera visible.
+  const visibleProjects = (data.projects || []).filter(p => p.visible !== false);
   const initialList = [];
   if (data.about) initialList.push(data.about);
-  initialList.push(...(data.projects || []));
+  initialList.push(...visibleProjects);
   initialList.forEach((p) => strips.appendChild(buildStrip(p)));
 
   const main = h('main', { class: 'page page-home' }, header, strips);
   mount(main);
 
-  // El infinito sólo vuelve a barajar los `projects` (no incluye el about).
+  // El infinito sólo vuelve a barajar los `projects` visibles (no incluye el about).
   InfState.stripsEl = strips;
-  setupInfiniteScroll(data.projects || [], pageAbort.signal);
+  setupInfiniteScroll(visibleProjects, pageAbort.signal);
 }
 
 
@@ -595,59 +595,94 @@ function buildFicha(p) {
       ul.appendChild(buildFichaRow(rol || 'team', nombre));
     });
   }
+  if (!ul.children.length) return null;
   return h('aside', { class: 'ficha' }, ul);
 }
 
 function buildDescription(p) {
-  if (!p.descripcion && !p.nombre) return null;
-  const children = [h('h2', { textContent: p.nombre || p.slug })];
+  const children = [];
+  if (p.nombre) children.push(h('h2', { textContent: p.nombre }));
   if (p.descripcion) children.push(h('p', { textContent: p.descripcion }));
+  if (!children.length) return null;
   return h('div', { class: 'desc' }, ...children);
 }
 
-/** Devuelve las URLs de todas las imágenes (para el lightbox). */
-function galleryImageUrls(p) {
-  if (Array.isArray(p.contenido) && p.contenido.length) {
-    return p.contenido
-      .filter((it) => it.tipo === 'imagen')
-      .map((it) => projectImgUrl(p.slug, it.src));
+/** Sondeo doblado + binario para descubrir cuántas imágenes numeradas existen
+ *  en `_PROJECTS/<slug>/`. Eficiente incluso para galerías grandes (~13 HEAD
+ *  requests para 81 imágenes). Devuelve 0 si no hay ninguna. */
+async function discoverGalleryCount(slug, max = 500) {
+  const head = (n) => fetch(projectImgUrl(slug, n), { method: 'HEAD' })
+    .then((r) => r.ok)
+    .catch(() => false);
+
+  // Doubling: 1, 2, 4, 8, ... hasta encontrar el primer fallo.
+  let lastOk = 0, firstFail = null, probe = 1;
+  while (probe <= max) {
+    if (await head(probe)) { lastOk = probe; probe *= 2; }
+    else { firstFail = probe; break; }
   }
-  const out = [];
-  for (let i = 1; i <= (p.imgCount || 0); i++) out.push(projectImgUrl(p.slug, i));
-  return out;
+  if (!firstFail) return lastOk;
+
+  // Búsqueda binaria entre el último OK y el primer fallo.
+  let lo = lastOk, hi = firstFail;
+  while (lo + 1 < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (await head(mid)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/** Construye los bloques del modo rico (contenido array). Devuelve también
+ *  la lista de URLs de imagen para el lightbox. */
+function populateRichGallery(gallery, p) {
+  const allImageUrls = p.contenido
+    .filter((it) => it.tipo === 'imagen')
+    .map((it) => projectImgUrl(p.slug, it.src));
+  let imgIdx = 0;
+  p.contenido.forEach((item) => {
+    if (item.tipo === 'imagen') {
+      const myIdx = imgIdx++;
+      const img = h('img', {
+        src: projectImgUrl(p.slug, item.src),
+        alt: `${p.nombre || p.slug} — ${item.src}`,
+        loading: 'lazy',
+        class: 'gallery__img',
+      });
+      img.addEventListener('click', () => Lightbox.open(allImageUrls, myIdx, img));
+      gallery.appendChild(img);
+    } else if (item.tipo === 'texto') {
+      gallery.appendChild(h('blockquote', { class: 'text-block', textContent: item.texto || '' }));
+    } else if (item.tipo === 'audio') {
+      gallery.appendChild(buildAudioBlock(p.slug, item));
+    }
+  });
+}
+
+/** Construye los `<img>` numerados 1..count del modo simple. */
+function populateSimpleGallery(gallery, p, count) {
+  const allImageUrls = [];
+  for (let i = 1; i <= count; i++) allImageUrls.push(projectImgUrl(p.slug, i));
+  for (let i = 1; i <= count; i++) {
+    const myIdx = i - 1;
+    const img = h('img', {
+      src: projectImgUrl(p.slug, i),
+      alt: `${p.nombre || p.slug} — ${i}`,
+      loading: 'lazy',
+      class: 'gallery__img',
+    });
+    img.addEventListener('click', () => Lightbox.open(allImageUrls, myIdx, img));
+    gallery.appendChild(img);
+  }
 }
 
 function buildGallery(p) {
   const gallery = h('div', { class: 'gallery' });
-  const allImageUrls = galleryImageUrls(p);
-
-  // Índice "visual" de imagen (ignora textos/audios) para abrir el lightbox en la correcta.
-  let imgIdx = 0;
-  const makeGalleryImg = (src, alt) => {
-    const myIdx = imgIdx++;
-    const img = h('img', { src, alt, loading: 'lazy', class: 'gallery__img' });
-    img.addEventListener('click', () => Lightbox.open(allImageUrls, myIdx, img));
-    return img;
-  };
-
   if (Array.isArray(p.contenido) && p.contenido.length) {
-    // Modo rico: el JSON define orden y tipo de cada bloque.
-    p.contenido.forEach((item) => {
-      if (item.tipo === 'imagen') {
-        gallery.appendChild(makeGalleryImg(projectImgUrl(p.slug, item.src), `${p.nombre || p.slug} — ${item.src}`));
-      } else if (item.tipo === 'texto') {
-        gallery.appendChild(h('blockquote', { class: 'text-block', textContent: item.texto || '' }));
-      } else if (item.tipo === 'audio') {
-        gallery.appendChild(buildAudioBlock(p.slug, item));
-      }
-    });
-  } else if (p.imgCount) {
-    // Modo simple: sólo imgCount, numeradas 1..N.
-    for (let i = 1; i <= p.imgCount; i++) {
-      gallery.appendChild(makeGalleryImg(projectImgUrl(p.slug, i), `${p.nombre || p.slug} — ${i}`));
-    }
+    populateRichGallery(gallery, p);
   }
-
+  // Modo simple: relleno asíncrono después de descubrir el count
+  // (ver renderProject — kicks off discoverGalleryCount).
   return gallery;
 }
 
@@ -680,16 +715,27 @@ function renderProject(data, slug) {
   const body = h('section', { class: 'proj-body' });
   const desc = buildDescription(p);
   if (desc) body.appendChild(desc);
-  body.appendChild(buildFicha(p));
+  const ficha = buildFicha(p);
+  if (ficha) body.appendChild(ficha);
 
+  const gallery = buildGallery(p);
   const main = h('main', { class: 'page page-project' },
     buildProjMargin('top'),
     body,
-    buildGallery(p),
+    gallery,
     buildProjMargin('bottom'),
     buildHomeLinkWrap(slug),
   );
   mount(main);
+
+  // Modo simple: descubre cuántas imágenes hay y rellena la galería en background.
+  // No bloquea la transición; las imágenes aparecen ~300-700ms después.
+  if (!Array.isArray(p.contenido) || !p.contenido.length) {
+    discoverGalleryCount(p.slug).then((count) => {
+      if (!gallery.isConnected) return; // ya navegó a otra página
+      if (count > 0) populateSimpleGallery(gallery, p, count);
+    });
+  }
 }
 
 function renderNotFound(slug) {

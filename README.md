@@ -102,15 +102,14 @@ _PROJECTS/mi-proyecto/
 ├── 3.webp
 └── …
 ```
-Las imágenes deben estar numeradas de forma consecutiva empezando en 1.
+Las imágenes deben estar numeradas de forma consecutiva empezando en 1. **No hace falta decir cuántas hay**: la web sondea automáticamente hasta encontrar el primer hueco.
 
 **2. Añade el proyecto a `data.json`** dentro del array `projects`:
 ```json
 {
   "slug": "mi-proyecto",
   "nombre": "Mi Proyecto",
-  "imgHome": 1,
-  "imgCount": 8,
+  "visible": true,
   "tipo": "festival",
   "lugar": "Barcelona",
   "fecha": "may. 26",
@@ -123,12 +122,15 @@ No te olvides de la coma al final del proyecto anterior.
 |---|---|
 | `slug` | Identificador interno. **Debe coincidir con el nombre de la carpeta en `_PROJECTS/`**. Solo minúsculas, números y guiones. |
 | `nombre` | Título visible en el proyecto y en la pestaña del navegador |
-| `imgHome` | Número de la imagen que se usa de portada en la tira de la home (ej. `1` → `1.webp`) |
-| `imgCount` | Cuántas imágenes tiene el proyecto en total |
+| `visible` | `true` → aparece en la home. `false` → no aparece en la home pero la URL `/<slug>` sigue accesible (útil para mandar el link a alguien antes de "publicar"). Si no pones el campo, se considera `true`. |
 | `tipo` | Tipo de trabajo: `press`, `club`, `festival`, etc. Aparece en la ficha técnica |
 | `lugar` | Dónde se hizo. Aparece en la ficha |
 | `fecha` | Cuándo se hizo. Aparece en la ficha |
 | `descripcion` | Texto bajo el título del proyecto |
+
+> **Campos vacíos = se omiten del render.** Si un proyecto todavía no tiene `tipo`, `lugar`, `fecha` o `descripcion`, simplemente **no pongas el campo**. La sección correspondiente desaparece. La ficha técnica también desaparece entera si todos sus campos están vacíos.
+
+> **Olvidate de `imgHome` e `imgCount`** — ya no existen. La portada del strip de la home se busca como `_PROJECTS/<slug>/portada.webp` (ver siguiente sección) y la galería se descubre sola.
 
 ### ✏️ Modificar un proyecto
 Abre `data.json`, busca el proyecto, edita los campos que quieras. Si cambias el `slug`, **renombra también la carpeta** en `_PROJECTS/` para que coincida.
@@ -136,6 +138,9 @@ Abre `data.json`, busca el proyecto, edita los campos que quieras. Si cambias el
 ### ❌ Borrar un proyecto
 1. Borra su entrada del array `projects` en `data.json` (ojo con las comas).
 2. Borra la carpeta correspondiente de `_PROJECTS/`.
+
+### 🙈 Ocultar un proyecto sin borrarlo
+Pon `"visible": false` en su entrada. Desaparece de la home pero `valentinbarrio.com/<slug>` sigue funcionando para quien tenga el link.
 
 ### 🔄 Cambiar el orden de los proyectos
 El orden en la home es el mismo que en el array `projects` de `data.json`. Mueve los objetos para reordenar.
@@ -146,13 +151,13 @@ El orden en la home es el mismo que en el array `projects` de `data.json`. Mueve
 
 ## GALERÍA RICA (con textos y audios intercalados)
 
-Si un proyecto solo tiene imágenes, basta con `imgCount` y se muestran todas numeradas. Pero si quieres **intercalar textos o audios**, añade un campo `contenido` con la lista exacta de bloques:
+Si un proyecto solo tiene imágenes, no hace falta hacer nada — la web detecta sola las imágenes numeradas en la carpeta. Pero si quieres **intercalar textos o audios**, añade un campo `contenido` con la lista exacta de bloques:
 
 ```json
 {
   "slug": "ejemplo",
   "nombre": "Ejemplo",
-  "imgHome": 1,
+  "visible": true,
   "tipo": "press",
   "lugar": "Barcelona",
   "fecha": "feb. 26",
@@ -174,7 +179,7 @@ Si un proyecto solo tiene imágenes, basta con `imgCount` y se muestran todas nu
 | `texto`  | `texto`: la frase a mostrar (aparece centrada, en cursiva) |
 | `audio`  | `src`: nombre del archivo de audio dentro de la carpeta del proyecto |
 
-> Cuando usas `contenido`, el campo `imgCount` **se ignora**. El orden y la selección los decides con los bloques `imagen` del array.
+> Cuando usas `contenido`, manda lo que pongas: el sondeo automático de imágenes **no se activa**, solo aparecen las que listes.
 
 ---
 
@@ -203,7 +208,6 @@ Editar `data.json` → `about`:
 "about": {
   "slug": "_valentin",
   "nombre": "valentin barrio",
-  "imgHome": 3,
   "tipo": "Photography, Art Direction, Visual Storytelling",
   "lugar": "Barcelona",
   "descripcion": "Photographer and visual artist based in Barcelona…",
@@ -243,8 +247,8 @@ El iconito de la pestaña del navegador está en `assets/navicon.png`. Reempláz
 | Síntoma | Causa probable |
 |---|---|
 | La web no carga nada | Error de sintaxis en `data.json` — una coma de más, una comilla sin cerrar. Valida con https://jsonlint.com |
-| Una imagen no se ve | El `slug` del proyecto no coincide con el nombre de la carpeta, o falta el archivo numerado (`3.webp`). |
-| La portada del proyecto es otra | Cambia `imgHome` al número de la imagen que quieras usar. |
+| Una imagen no se ve | El `slug` del proyecto no coincide con el nombre de la carpeta, o falta el archivo numerado (`3.webp`). Recuerda que la numeración tiene que ser consecutiva: si te saltas un número (`1.webp`, `2.webp`, falta el `3.webp`, `4.webp`), la web para de buscar en el hueco y no verás `4.webp` ni siguientes. |
+| La portada del proyecto en la home no es la que quiero | Cambia `_PROJECTS/<slug>/portada.webp` por la imagen que quieras (mismo nombre). |
 | El audio no suena | El `src` del bloque no coincide con el nombre exacto del archivo dentro de la carpeta del proyecto. Atento a mayúsculas/minúsculas y espacios. |
 | Los cambios no se ven | Caché del navegador. Ctrl+F5 (Windows) o Cmd+Shift+R (Mac). |
 | Al entrar directamente a `/bolder` da 404 | Solo en local con `python3 -m http.server`. En GitHub Pages sí funciona gracias a `404.html`. |

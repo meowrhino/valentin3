@@ -8,7 +8,6 @@
   "about": {
     "slug": "_valentin",
     "nombre": "valentin barrio",
-    "imgHome": 4,
     "tipo": "Photography, Art Direction, Visual Storytelling",
     "lugar": "Barcelona",
     "descripcion": "Photographer and visual artist based in Barcelona. Focused on capturing the raw energy of live events, fashion editorials, and intimate portraits.",
@@ -34,8 +33,7 @@
     {
       "slug": "bolder",
       "nombre": "Bolder",
-      "imgHome": 1,
-      "imgCount": 7,
+      "visible": false,
       "tipo": "press",
       "lugar": "Barcelona",
       "fecha": "jan. 26",
@@ -44,8 +42,7 @@
     {
       "slug": "brunch",
       "nombre": "Brunch!",
-      "imgHome": 1,
-      "imgCount": 81,
+      "visible": true,
       "tipo": "festival",
       "lugar": "Barcelona",
       "fecha": "august 25",
@@ -54,8 +51,7 @@
     {
       "slug": "kalaRos",
       "nombre": "Kala Ros",
-      "imgHome": 1,
-      "imgCount": 7,
+      "visible": false,
       "tipo": "press",
       "lugar": "Barcelona",
       "fecha": "dec. 25",
@@ -64,8 +60,7 @@
     {
       "slug": "kult",
       "nombre": "Kult",
-      "imgHome": 1,
-      "imgCount": 9,
+      "visible": false,
       "tipo": "club",
       "lugar": "Barcelona",
       "fecha": "dec. 25",
@@ -74,8 +69,7 @@
     {
       "slug": "lucho",
       "nombre": "Lucho (Ve)",
-      "imgHome": 1,
-      "imgCount": 12,
+      "visible": true,
       "tipo": "press",
       "lugar": "Reflejo 44",
       "fecha": "feb. 26",
@@ -84,8 +78,7 @@
     {
       "slug": "lynn",
       "nombre": "Lynn",
-      "imgHome": 1,
-      "imgCount": 10,
+      "visible": true,
       "tipo": "press",
       "lugar": "Mallorca",
       "fecha": "oct. 25",
@@ -97,8 +90,7 @@
     {
       "slug": "razz",
       "nombre": "Razz",
-      "imgHome": 1,
-      "imgCount": 19,
+      "visible": true,
       "tipo": "club",
       "lugar": "Barcelona",
       "fecha": "feb. 25",
@@ -107,8 +99,7 @@
     {
       "slug": "santana",
       "nombre": "Santana",
-      "imgHome": 1,
-      "imgCount": 10,
+      "visible": false,
       "tipo": "festival",
       "lugar": "Barcelona",
       "fecha": "feb. 26",
@@ -117,8 +108,7 @@
     {
       "slug": "soundit",
       "nombre": "Sound it!",
-      "imgHome": 1,
-      "imgCount": 71,
+      "visible": true,
       "tipo": "festival",
       "lugar": "Barcelona",
       "fecha": "august 25",
@@ -127,8 +117,7 @@
     {
       "slug": "yu",
       "nombre": "Yu",
-      "imgHome": 1,
-      "imgCount": 17,
+      "visible": true,
       "tipo": "club",
       "lugar": "Barcelona",
       "fecha": "dec. 25",
@@ -137,8 +126,7 @@
     {
       "slug": "carlos",
       "nombre": "Carlos",
-      "imgHome": 8,
-      "imgCount": 21,
+      "visible": true,
       "tipo": "press",
       "lugar": "Barcelona",
       "fecha": "Spring 2025",
@@ -150,8 +138,7 @@
     {
       "slug": "heyami",
       "nombre": "Hey Ami",
-      "imgHome": 1,
-      "imgCount": 9,
+      "visible": true,
       "tipo": "press",
       "lugar": "Barcelona",
       "fecha": "Winter 2025",
@@ -163,32 +150,22 @@
     {
       "slug": "insomnia",
       "nombre": "Insomnia",
-      "imgHome": 1,
-      "imgCount": 10,
-      "tipo": "press",
-      "lugar": "Barcelona",
-      "fecha": "—",
-      "descripcion": "Por completar."
+      "visible": false
     },
     {
       "slug": "quiet",
       "nombre": "Quiet",
-      "imgHome": 1,
-      "imgCount": 10,
-      "tipo": "press",
-      "lugar": "Barcelona",
-      "fecha": "—",
-      "descripcion": "Por completar."
+      "visible": false
     },
     {
       "slug": "fragments",
       "nombre": "Fragments",
-      "imgHome": 1,
-      "imgCount": 11,
-      "tipo": "press",
-      "lugar": "Barcelona",
-      "fecha": "—",
-      "descripcion": "Por completar."
+      "visible": false
+    },
+    {
+      "slug": "alona",
+      "nombre": "Alona",
+      "visible": false
     }
   ]
 }
