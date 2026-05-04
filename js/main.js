@@ -669,7 +669,8 @@ function renderHome(data) {
 // Estructura:
 //   .proj-margin--top   ← 20dvh con un dot centrado
 //   .proj-body          ← descripción + ficha técnica
-//   .gallery            ← imágenes + textos + audios en el orden del JSON
+//   .gallery            ← imágenes 1..N (auto-discovered) con extras
+//                          (texto/audio) intercalados según `posicion`
 //   .proj-margin--bottom ← 20dvh con dot
 //   .home-link-wrap     ← "back to home"
 // ============================================================================
@@ -730,36 +731,39 @@ async function discoverGalleryCount(slug, max = 500) {
   return lo;
 }
 
-/** Construye los bloques del modo rico (contenido array). Devuelve también
- *  la lista de URLs de imagen para el lightbox. */
-function populateRichGallery(gallery, p) {
-  const allImageUrls = p.contenido
-    .filter((it) => it.tipo === 'imagen')
-    .map((it) => projectImgUrl(p.slug, it.src));
-  let imgIdx = 0;
-  p.contenido.forEach((item) => {
-    if (item.tipo === 'imagen') {
-      const myIdx = imgIdx++;
-      const img = h('img', {
-        src: projectImgUrl(p.slug, item.src),
-        alt: `${p.nombre || p.slug} — ${item.src}`,
-        loading: 'lazy',
-        class: 'gallery__img',
-      });
-      img.addEventListener('click', () => Lightbox.open(allImageUrls, myIdx, img));
-      gallery.appendChild(img);
-    } else if (item.tipo === 'texto') {
-      gallery.appendChild(h('blockquote', { class: 'text-block', textContent: item.texto || '' }));
-    } else if (item.tipo === 'audio') {
-      gallery.appendChild(buildAudioBlock(p.slug, item));
-    }
-  });
+/** Crea un bloque suelto de extra (texto o audio). */
+function buildExtraBlock(slug, extra) {
+  if (extra.tipo === 'texto') {
+    return h('blockquote', { class: 'text-block', textContent: extra.texto || '' });
+  }
+  if (extra.tipo === 'audio') {
+    return buildAudioBlock(slug, { src: extra.src });
+  }
+  return null;
 }
 
-/** Construye los `<img>` numerados 1..count del modo simple. */
-function populateSimpleGallery(gallery, p, count) {
+/** Rellena la galería con las `count` imágenes numeradas (1..count) e
+ *  intercala los `extras` según su `posicion`:
+ *   - posicion 0 → antes de la primera imagen
+ *   - posicion N → justo después de la N-ésima imagen
+ *  Varios extras pueden compartir posición; salen en el orden del array. */
+function populateGallery(gallery, p, count) {
   const allImageUrls = [];
   for (let i = 1; i <= count; i++) allImageUrls.push(projectImgUrl(p.slug, i));
+
+  const extrasByPos = {};
+  for (const ex of (p.extras || [])) {
+    const pos = ex.posicion ?? 0;
+    (extrasByPos[pos] ||= []).push(ex);
+  }
+  const flushExtras = (pos) => {
+    for (const ex of (extrasByPos[pos] || [])) {
+      const block = buildExtraBlock(p.slug, ex);
+      if (block) gallery.appendChild(block);
+    }
+  };
+
+  flushExtras(0);
   for (let i = 1; i <= count; i++) {
     const myIdx = i - 1;
     const img = h('img', {
@@ -770,17 +774,13 @@ function populateSimpleGallery(gallery, p, count) {
     });
     img.addEventListener('click', () => Lightbox.open(allImageUrls, myIdx, img));
     gallery.appendChild(img);
+    flushExtras(i);
   }
 }
 
-function buildGallery(p) {
-  const gallery = h('div', { class: 'gallery' });
-  if (Array.isArray(p.contenido) && p.contenido.length) {
-    populateRichGallery(gallery, p);
-  }
-  // Modo simple: relleno asíncrono después de descubrir el count
-  // (ver renderProject — kicks off discoverGalleryCount).
-  return gallery;
+function buildGallery(_p) {
+  // El relleno ocurre en renderProject tras el auto-discovery de count.
+  return h('div', { class: 'gallery' });
 }
 
 /** Construye los dos margenes (arriba/abajo) de 20dvh con un dot centrado. */
@@ -825,14 +825,12 @@ function renderProject(data, slug) {
   );
   mount(main);
 
-  // Modo simple: descubre cuántas imágenes hay y rellena la galería en background.
-  // No bloquea la transición; las imágenes aparecen ~300-700ms después.
-  if (!Array.isArray(p.contenido) || !p.contenido.length) {
-    discoverGalleryCount(p.slug).then((count) => {
-      if (!gallery.isConnected) return; // ya navegó a otra página
-      if (count > 0) populateSimpleGallery(gallery, p, count);
-    });
-  }
+  // Auto-discovery de imágenes + intercalado de extras (texto/audio) según
+  // su `posicion`. No bloquea la transición; aparece tras ~300-700ms.
+  discoverGalleryCount(p.slug).then((count) => {
+    if (!gallery.isConnected) return; // ya navegó a otra página
+    if (count > 0 || p.extras?.length) populateGallery(gallery, p, count);
+  });
 }
 
 function renderNotFound(slug) {

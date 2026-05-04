@@ -186,9 +186,9 @@ _PROJECTS/mi-proyecto/
 
 ---
 
-## GALERÍA RICA (con textos y audios intercalados)
+## EXTRAS: textos y audios intercalados en la galería
 
-Si un proyecto solo tiene imágenes, no hace falta hacer nada — la web detecta sola las imágenes numeradas en la carpeta. Pero si quieres **intercalar textos o audios**, añade un campo `contenido` con la lista exacta de bloques:
+La galería del proyecto siempre se rellena automáticamente con las imágenes numeradas (`1.webp`, `2.webp`, …) que haya en la carpeta. Si quieres **meter una cita o una nota de voz entre dos imágenes concretas**, añade un campo `extras` con un array de objetos:
 
 ```json
 {
@@ -199,24 +199,22 @@ Si un proyecto solo tiene imágenes, no hace falta hacer nada — la web detecta
   "lugar": "Barcelona",
   "fecha": "feb. 26",
   "descripcion": "…",
-  "contenido": [
-    { "tipo": "imagen", "src": 1 },
-    { "tipo": "imagen", "src": 2 },
-    { "tipo": "texto",  "texto": "Una cita que divide la galería." },
-    { "tipo": "imagen", "src": 3 },
-    { "tipo": "audio",  "src": "nota-de-voz.opus" },
-    { "tipo": "imagen", "src": 4 }
+  "extras": [
+    { "tipo": "texto", "texto": "Una cita al principio.", "posicion": 0 },
+    { "tipo": "audio", "src": "nota-de-voz.opus", "posicion": 3 },
+    { "tipo": "texto", "texto": "Otra cita más abajo.", "posicion": 7 }
   ]
 }
 ```
 
-| Tipo de bloque | Campos |
+| Campo | Qué es |
 |---|---|
-| `imagen` | `src`: número de la imagen dentro de la carpeta (ej. `3` → `3.webp`) |
-| `texto`  | `texto`: la frase a mostrar (aparece centrada, en cursiva) |
-| `audio`  | `src`: nombre del archivo de audio dentro de la carpeta del proyecto |
+| `tipo` | `"texto"` o `"audio"` |
+| `texto` | (solo si tipo `texto`) la frase a mostrar (aparece centrada, en cursiva) |
+| `src` | (solo si tipo `audio`) nombre del archivo dentro de la carpeta del proyecto |
+| `posicion` | número entero. **`0` = antes de la primera imagen**, **`N` = justo después de la N-ésima imagen**. Si pones varios extras con la misma posición, salen en el orden del array. |
 
-> Cuando usas `contenido`, manda lo que pongas: el sondeo automático de imágenes **no se activa**, solo aparecen las que listes.
+> Tu galería sigue ordenándose por número de archivo (`1.webp`, `2.webp`…). Si quieres reordenar, **renombras los archivos**. Los extras solo intercalan; no cambian el orden de las imágenes.
 
 ---
 
@@ -237,7 +235,7 @@ Cada entrada aparece en la ficha técnica. Si dejas `rol` vacío, se muestra com
 
 ## ABOUT (`_valentin`)
 
-Es un proyecto más, pero en `data.json` vive fuera del array `projects`, dentro de la clave `about`. Soporta todo lo mismo (ficha, `contenido` con imágenes + textos + audios, equipo).
+Es un proyecto más, pero en `data.json` vive fuera del array `projects`, dentro de la clave `about`. Soporta todo lo mismo (ficha, galería auto-descubierta, `extras` para intercalar texto/audio, equipo).
 
 ### ✏️ Cambiar la bio, ubicación o tipo
 Editar `data.json` → `about`:
@@ -248,7 +246,7 @@ Editar `data.json` → `about`:
   "tipo": "Photography, Art Direction, Visual Storytelling",
   "lugar": "Barcelona",
   "descripcion": "Photographer and visual artist based in Barcelona…",
-  "contenido": [ … ]
+  "extras": [ … ]
 }
 ```
 

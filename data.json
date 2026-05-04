@@ -11,22 +11,11 @@
     "tipo": "Photography, Art Direction, Visual Storytelling",
     "lugar": "Barcelona",
     "descripcion": "Photographer and visual artist based in Barcelona. Focused on capturing the raw energy of live events, fashion editorials, and intimate portraits.",
-    "contenido": [
-      { "tipo": "imagen", "src": 4 },
-      { "tipo": "imagen", "src": 2 },
-      { "tipo": "texto", "texto": "Every frame is a conversation between what happened and what I chose to see." },
-      { "tipo": "imagen", "src": 3 },
-      { "tipo": "imagen", "src": 1 },
-      { "tipo": "audio", "src": "WhatsApp Audio 2026-04-09 at 11.23.28.opus" },
-      { "tipo": "imagen", "src": 5 },
-      { "tipo": "imagen", "src": 6 },
-      { "tipo": "texto", "texto": "I don't chase the light. I wait for it to find its way." },
-      { "tipo": "imagen", "src": 7 },
-      { "tipo": "imagen", "src": 8 },
-      { "tipo": "imagen", "src": 9 },
-      { "tipo": "texto", "texto": "The silence between two frames is where the real story lives." },
-      { "tipo": "imagen", "src": 10 },
-      { "tipo": "imagen", "src": 11 }
+    "extras": [
+      { "tipo": "texto", "texto": "Every frame is a conversation between what happened and what I chose to see.", "posicion": 3 },
+      { "tipo": "audio", "src": "WhatsApp Audio 2026-04-09 at 11.23.28.opus", "posicion": 5 },
+      { "tipo": "texto", "texto": "I don't chase the light. I wait for it to find its way.", "posicion": 7 },
+      { "tipo": "texto", "texto": "The silence between two frames is where the real story lives.", "posicion": 9 }
     ]
   },
   "projects": [
@@ -167,6 +156,11 @@
         { "nombre": "Carlos", "rol": "" },
         { "nombre": "Mara", "rol": "mua" },
         { "nombre": "Pol", "rol": "photo assist" }
+      ],
+      "extras": [
+        { "tipo": "texto", "texto": "Carlos walked in already in character — we just had to follow.", "posicion": 0 },
+        { "tipo": "texto", "texto": "Between takes, the silence said more than the camera ever could.", "posicion": 5 },
+        { "tipo": "audio", "src": "voice-carlos.opus", "posicion": 12 }
       ]
     },
     {
@@ -181,6 +175,10 @@
         { "nombre": "Hey Ami", "rol": "" },
         { "nombre": "Aitana", "rol": "styling" },
         { "nombre": "Lex", "rol": "art direction" }
+      ],
+      "extras": [
+        { "tipo": "audio", "src": "voice-heyami.opus", "posicion": 0 },
+        { "tipo": "texto", "texto": "Identity isn't designed; it's discovered.", "posicion": 4 }
       ]
     },
     {
