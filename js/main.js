@@ -512,13 +512,9 @@ function buildStripMedia(slug, alt) {
   const onError = (current) => {
     i++;
     if (i >= PORTADA_EXTS.length) {
-      const fallback = h('img', {
-        src: projectImgUrl(slug, 1),
-        alt,
-        loading: 'lazy',
-        class: 'strip__media',
-      });
-      current.replaceWith(fallback);
+      // No hay portada — el strip queda transparente (sin medio).
+      // El hover sigue funcionando: velo + título + dots.
+      current.remove();
       return;
     }
     const nextExt = PORTADA_EXTS[i];
@@ -549,8 +545,22 @@ function buildBanner(item) {
   return h('div', { class: 'strip strip--banner', 'aria-hidden': 'true' }, video);
 }
 
+/** Mide el ancho del título del strip y setea `--dot-offset` para que los
+ *  dos dots queden justo al lado del título (un poco de aire entre el dot
+ *  y el texto). En reposo siguen apilados al centro; en hover/touch se
+ *  mueven a esa posición. */
+function updateDotOffset(strip) {
+  const title = strip.querySelector('.strip__title');
+  if (!title) return;
+  const w = title.offsetWidth;
+  if (!w) return; // título no medible aún
+  const offset = Math.round(w / 2 + 16);
+  strip.style.setProperty('--dot-offset', offset + 'px');
+}
+
 /** Crea un <a class="strip"> con medio + overlay + dos dots para un proyecto.
- *  Hover: aparece velo oscuro + título centrado, los dos dots se separan.
+ *  Hover: aparece velo oscuro + título centrado, los dos dots se separan
+ *  hasta quedar justo al lado del título (offset calculado dinámicamente).
  *  Click: la transición de iris arranca desde ambos dots simultáneamente. */
 function buildStrip(p) {
   const media = buildStripMedia(p.slug, p.nombre || p.slug);
@@ -576,6 +586,12 @@ function buildStrip(p) {
     });
     navigateTo(p.slug, { origins });
   });
+
+  // Medir el título tras el primer paint, y otra vez cuando carguen las
+  // fuentes (font-display: swap puede cambiar las métricas).
+  requestAnimationFrame(() => updateDotOffset(a));
+  document.fonts?.ready?.then(() => updateDotOffset(a));
+
   return a;
 }
 
