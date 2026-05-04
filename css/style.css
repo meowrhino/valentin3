@@ -127,8 +127,8 @@ main.page {
   text-transform: lowercase;
 }
 
-/* Dos dots: en reposo apilados en el centro (se ven como uno solo).
- * Al hover se separan horizontalmente, dejando el título entre ellos. */
+/* Dot único centrado (mokakopa-style: blend difference). Aparece tanto en
+ * reposo como en hover; en mobile sigue ahí aunque el overlay no se vea. */
 .strip .dot {
   position: absolute;
   top: 50%;
@@ -140,17 +140,6 @@ main.page {
   mix-blend-mode: difference;
   pointer-events: none;
   transform: translate(-50%, -50%);
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.strip:hover .dot--left  { transform: translate(calc(-50% - var(--dot-offset, 80px)), -50%); }
-.strip:hover .dot--right { transform: translate(calc(-50% + var(--dot-offset, 80px)), -50%); }
-
-/* Touch: el :hover no se dispara, así que mostramos siempre el overlay
- * (velo + título) y los dos dots ya separados alrededor del título. */
-@media (pointer: coarse) {
-  .strip__overlay { opacity: 1; }
-  .strip .dot--left  { transform: translate(calc(-50% - var(--dot-offset, 80px)), -50%); }
-  .strip .dot--right { transform: translate(calc(-50% + var(--dot-offset, 80px)), -50%); }
 }
 
 /* Banner decorativo: misma forma que strip pero sin interacción.

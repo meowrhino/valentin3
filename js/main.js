@@ -545,53 +545,32 @@ function buildBanner(item) {
   return h('div', { class: 'strip strip--banner', 'aria-hidden': 'true' }, video);
 }
 
-/** Mide el ancho del título del strip y setea `--dot-offset` para que los
- *  dos dots queden justo al lado del título (un poco de aire entre el dot
- *  y el texto). En reposo siguen apilados al centro; en hover/touch se
- *  mueven a esa posición. */
-function updateDotOffset(strip) {
-  const title = strip.querySelector('.strip__title');
-  if (!title) return;
-  const w = title.offsetWidth;
-  if (!w) return; // título no medible aún
-  const offset = Math.round(w / 2 + 16);
-  strip.style.setProperty('--dot-offset', offset + 'px');
-}
-
-/** Crea un <a class="strip"> con medio + overlay + dos dots para un proyecto.
- *  Hover: aparece velo oscuro + título centrado, los dos dots se separan
- *  hasta quedar justo al lado del título (offset calculado dinámicamente).
- *  Click: la transición de iris arranca desde ambos dots simultáneamente. */
+/** Crea un <a class="strip"> con medio + overlay + dot único para un proyecto.
+ *  Reposo: solo se ve el dot centrado.
+ *  Hover (desktop): aparece velo oscuro + título centrado; el dot sigue ahí.
+ *  Click: la transición de iris arranca desde el dot. */
 function buildStrip(p) {
   const media = buildStripMedia(p.slug, p.nombre || p.slug);
   const overlay = h('div', { class: 'strip__overlay' },
     h('span', { class: 'strip__title', textContent: p.nombre || p.slug }),
   );
-  const dotL = h('span', { class: 'dot dot--left' });
-  const dotR = h('span', { class: 'dot dot--right' });
+  const dot = h('span', { class: 'dot' });
   const a = h('a', {
     class: 'strip',
     href: urlForSlug(p.slug),
     dataset: { slug: p.slug },
     'aria-label': p.nombre || p.slug,
-  }, media, overlay, dotL, dotR);
+  }, media, overlay, dot);
 
   a.addEventListener('click', (e) => {
     // respetar cmd/ctrl/shift-click (abrir en pestaña nueva, etc.)
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
-    const origins = [dotL, dotR].map((d) => {
-      const r = d.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const r = dot.getBoundingClientRect();
+    navigateTo(p.slug, {
+      origins: [{ x: r.left + r.width / 2, y: r.top + r.height / 2 }],
     });
-    navigateTo(p.slug, { origins });
   });
-
-  // Medir el título tras el primer paint, y otra vez cuando carguen las
-  // fuentes (font-display: swap puede cambiar las métricas).
-  requestAnimationFrame(() => updateDotOffset(a));
-  document.fonts?.ready?.then(() => updateDotOffset(a));
-
   return a;
 }
 
