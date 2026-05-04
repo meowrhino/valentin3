@@ -3,22 +3,25 @@
     "nombre": "valentin barrio",
     "tagline": "creative based in europe",
     "email": "valentinbarrio@gmail.com",
-    "instagram": "valentinbarrio"
-  },
-  "about": {
-    "slug": "_valentin",
-    "nombre": "valentin barrio",
-    "tipo": "Photography, Art Direction, Visual Storytelling",
-    "lugar": "Barcelona",
-    "descripcion": "Photographer and visual artist based in Barcelona. Focused on capturing the raw energy of live events, fashion editorials, and intimate portraits.",
-    "extras": [
-      { "tipo": "texto", "texto": "Every frame is a conversation between what happened and what I chose to see.", "posicion": 3 },
-      { "tipo": "audio", "src": "WhatsApp Audio 2026-04-09 at 11.23.28.opus", "posicion": 5 },
-      { "tipo": "texto", "texto": "I don't chase the light. I wait for it to find its way.", "posicion": 7 },
-      { "tipo": "texto", "texto": "The silence between two frames is where the real story lives.", "posicion": 9 }
-    ]
+    "instagram": "valentinbarrio",
+    "about_slug": "_valentin"
   },
   "projects": [
+    {
+      "slug": "_valentin",
+      "nombre": "about me",
+      "visible": false,
+      "tipo": "Photography, Art Direction, Visual Storytelling",
+      "lugar": "Barcelona",
+      "web": "meowrhino.studio",
+      "descripcion": "Photographer and visual artist based in Barcelona. Focused on capturing the raw energy of live events, fashion editorials, and intimate portraits.",
+      "extras": [
+        { "tipo": "texto", "texto": "Every frame is a conversation between what happened and what I chose to see.", "posicion": 3 },
+        { "tipo": "audio", "src": "WhatsApp Audio 2026-04-09 at 11.23.28.opus", "posicion": 5 },
+        { "tipo": "texto", "texto": "I don't chase the light. I wait for it to find its way.", "posicion": 7 },
+        { "tipo": "texto", "texto": "The silence between two frames is where the real story lives.", "posicion": 9 }
+      ]
+    },
     {
       "slug": "bolder",
       "nombre": "Bolder",

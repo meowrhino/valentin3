@@ -2,7 +2,7 @@
 // valentin3 — SPA portfolio
 // ----------------------------------------------------------------------------
 // Toda la web vive en esta sola página. Este script:
-//   1. lee `data.json` (proyectos + metadatos del about)
+//   1. lee `data.json` (proyectos)
 //   2. pinta la home (tiras/strips + scroll infinito random)
 //   3. pinta cada proyecto (ficha + galería + audios + textos)
 //   4. enlaza URLs limpias (`/bolder`) con pushState + 404.html fallback
@@ -112,10 +112,9 @@ async function loadData() {
   return DATA;
 }
 
-/** Busca un proyecto por slug (considerando también el objeto `about`). */
+/** Busca un proyecto por slug. */
 function findProject(data, slug) {
   if (!slug) return null;
-  if (data.about && data.about.slug === slug) return data.about;
   return (data.projects || []).find((p) => p.slug === slug) || null;
 }
 
@@ -465,7 +464,7 @@ function buildAudioBlock(slug, item) {
 // ============================================================================
 // HOME — strips iniciales en orden + scroll infinito random
 // ----------------------------------------------------------------------------
-// El primer pase muestra about + proyectos en el orden del JSON. A partir de
+// El primer pase muestra los proyectos en el orden del JSON. A partir de
 // ahí, al acercarse al fondo se añaden batches de strips aleatorios tomados
 // de un pool (triple de los proyectos, barajado).
 // ============================================================================
@@ -475,6 +474,7 @@ const InfState = {
   pool: [],       // array barajado de proyectos para ir consumiendo
   poolPtr: 0,     // puntero dentro del pool; al agotarse se re-baraja
   stripsEl: null, // contenedor DOM donde se insertan las nuevas strips
+  lastSlug: null, // último slug añadido, para evitar repetición inmediata
 };
 
 /** Extensiones aceptadas para `portada.<ext>`. Se prueban en este orden:
@@ -582,7 +582,17 @@ function appendRandomBatch(n = 6) {
       InfState.pool = shuffle(InfState.pool);
       InfState.poolPtr = 0;
     }
-    frag.appendChild(buildStrip(InfState.pool[InfState.poolPtr++]));
+    // Si el siguiente coincide con el último añadido, avanzamos uno más
+    if (InfState.pool.length > 1 && InfState.pool[InfState.poolPtr].slug === InfState.lastSlug) {
+      InfState.poolPtr++;
+      if (InfState.poolPtr >= InfState.pool.length) {
+        InfState.pool = shuffle(InfState.pool);
+        InfState.poolPtr = 0;
+      }
+    }
+    const p = InfState.pool[InfState.poolPtr++];
+    InfState.lastSlug = p.slug;
+    frag.appendChild(buildStrip(p));
   }
   InfState.stripsEl.appendChild(frag);
 }
@@ -621,8 +631,21 @@ function setupInfiniteScroll(projects, signal) {
 function renderHome(data) {
   document.title = data.meta?.nombre || 'valentin barrio';
 
+  const aboutSlug = data.meta?.about_slug;
+  const nameEl = aboutSlug
+    ? h('a', { class: 'name', href: urlForSlug(aboutSlug), textContent: data.meta?.nombre || '' })
+    : h('div', { class: 'name', textContent: data.meta?.nombre || '' });
+  if (aboutSlug) {
+    nameEl.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+      e.preventDefault();
+      const r = nameEl.getBoundingClientRect();
+      navigateTo(aboutSlug, { origins: [{ x: r.left + r.width / 2, y: r.top + r.height / 2 }] });
+    });
+  }
+
   const header = h('header', { class: 'home-header' },
-    h('div', { class: 'name',    textContent: data.meta?.nombre || '' }),
+    nameEl,
     data.meta?.tagline ? h('div', { class: 'tagline', textContent: data.meta.tagline }) : null,
     data.meta?.email
       ? h('a', { class: 'email', href: `mailto:${data.meta.email}`, textContent: data.meta.email })
@@ -639,24 +662,18 @@ function renderHome(data) {
   );
 
   const strips = h('div', { class: 'strips' });
-  // Orden inicial: about primero, luego los items del array `projects` en
-  // orden — proyectos visibles + banners. Los banners (items con `banner`)
-  // son decorativos, no clickables, y solo aparecen en la pasada inicial.
-  const orderedItems = (data.projects || []).filter((it) => {
-    if (it.banner) return true;
-    return it.visible !== false;
-  });
-  const initialList = [];
-  if (data.about) initialList.push(data.about);
-  initialList.push(...orderedItems);
-  initialList.forEach((it) => {
-    strips.appendChild(it.banner ? buildBanner(it) : buildStrip(it));
-  });
+  // Orden inicial: proyectos visibles + banners, en el orden del JSON.
+  // Los banners son decorativos, no clickables, y solo aparecen en esta pasada.
+  (data.projects || [])
+    .filter((it) => it.banner || it.visible !== false)
+    .forEach((it) => {
+      strips.appendChild(it.banner ? buildBanner(it) : buildStrip(it));
+    });
 
   const main = h('main', { class: 'page page-home' }, header, strips);
   mount(main);
 
-  // El infinito sólo baraja los proyectos visibles (sin about ni banners).
+  // El infinito baraja los proyectos visibles (sin banners).
   const shufflable = (data.projects || []).filter(p => !p.banner && p.visible !== false);
   InfState.stripsEl = strips;
   setupInfiniteScroll(shufflable, pageAbort.signal);
@@ -687,6 +704,10 @@ function buildFicha(p) {
   if (p.tipo)  ul.appendChild(buildFichaRow('type',  p.tipo));
   if (p.lugar) ul.appendChild(buildFichaRow('place', p.lugar));
   if (p.fecha) ul.appendChild(buildFichaRow('date',  p.fecha));
+  if (p.web)   ul.appendChild(h('li', {},
+    h('span', { class: 'k', textContent: 'web' }),
+    h('a', { class: 'v', href: `https://${p.web}`, target: '_blank', rel: 'noopener noreferrer', textContent: p.web }),
+  ));
   if (Array.isArray(p.equipo)) {
     p.equipo.forEach(({ nombre, rol }) => {
       if (!nombre) return;

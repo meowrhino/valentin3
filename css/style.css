@@ -407,7 +407,7 @@ main.page {
 }
 
 @media (min-width: 700px) {
-  .home-header { padding-top: 4rem; }
+  .home-header { padding-top: 4rem; padding-bottom: 4rem; }
   .home-header .name { font-size: 1.55rem; }
   .proj-body .desc h2 { font-size: 1.8rem; }
 }
