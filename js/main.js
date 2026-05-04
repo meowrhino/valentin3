@@ -179,11 +179,29 @@ const Iris = (() => {
     el.style.maskImage = grad;
   }
 
-  function cover(x, y, duration = COVER_MS) {
+  /** `origins` puede ser un único `{x,y}` o un array de varios. Cuando son
+   *  varios, se construye un mask-image con un radial-gradient por origen
+   *  (las áreas negras se suman, así dos círculos creciendo se fusionan al
+   *  solaparse). */
+  function cover(origins, duration = COVER_MS) {
     ensure();
-    if (REDUCED_MOTION) { setMask(x, y, 99999, true); return Promise.resolve(); }
-    return animateValue(0, maxRadius(x, y), duration, easeInOutCubic,
-      (r) => setMask(x, y, r, true));
+    const arr = Array.isArray(origins) ? origins : [origins];
+    if (REDUCED_MOTION) {
+      const grads = arr.map((o) =>
+        `radial-gradient(circle at ${o.x}px ${o.y}px, #000 99999px, transparent 100000px)`
+      ).join(', ');
+      el.style.maskImage = grads;
+      el.style.webkitMaskImage = grads;
+      return Promise.resolve();
+    }
+    const maxR = Math.max(...arr.map((o) => maxRadius(o.x, o.y)));
+    return animateValue(0, maxR, duration, easeInOutCubic, (r) => {
+      const grads = arr.map((o) =>
+        `radial-gradient(circle at ${o.x}px ${o.y}px, #000 ${r}px, transparent ${r + 1}px)`
+      ).join(', ');
+      el.style.maskImage = grads;
+      el.style.webkitMaskImage = grads;
+    });
   }
 
   function reveal(x, y, duration = REVEAL_MS) {
@@ -511,26 +529,32 @@ function buildStripMedia(slug, alt) {
   return initial;
 }
 
-/** Crea un <a class="strip"> con medio + dot para un proyecto. */
+/** Crea un <a class="strip"> con medio + overlay + dos dots para un proyecto.
+ *  Hover: aparece velo oscuro + título centrado, los dos dots se separan.
+ *  Click: la transición de iris arranca desde ambos dots simultáneamente. */
 function buildStrip(p) {
   const media = buildStripMedia(p.slug, p.nombre || p.slug);
-  const dot = h('span', { class: 'dot' });
+  const overlay = h('div', { class: 'strip__overlay' },
+    h('span', { class: 'strip__title', textContent: p.nombre || p.slug }),
+  );
+  const dotL = h('span', { class: 'dot dot--left' });
+  const dotR = h('span', { class: 'dot dot--right' });
   const a = h('a', {
     class: 'strip',
     href: urlForSlug(p.slug),
     dataset: { slug: p.slug },
     'aria-label': p.nombre || p.slug,
-  }, media, dot);
+  }, media, overlay, dotL, dotR);
 
   a.addEventListener('click', (e) => {
     // respetar cmd/ctrl/shift-click (abrir en pestaña nueva, etc.)
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
-    const r = dot.getBoundingClientRect();
-    navigateTo(p.slug, {
-      originX: r.left + r.width / 2,
-      originY: r.top + r.height / 2,
+    const origins = [dotL, dotR].map((d) => {
+      const r = d.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     });
+    navigateTo(p.slug, { origins });
   });
   return a;
 }
@@ -883,11 +907,15 @@ async function navigateTo(slug, opts = {}) {
   Iris.setBusy(true);
   try {
     if (goingToProject) {
-      // ABRIR: cover crece desde el dot clicado → reveal crece desde el centro.
-      const origin = (typeof opts.originX === 'number')
-        ? { x: opts.originX, y: opts.originY }
-        : centerOfViewport();
-      await Iris.cover(origin.x, origin.y);
+      // ABRIR: cover crece desde los dots del strip clicado (uno o dos) →
+      // reveal crece desde el centro. `opts.origins` es un array de {x,y};
+      // por compat también se admite el viejo `opts.originX/Y` (un solo punto).
+      const origins = opts.origins?.length
+        ? opts.origins
+        : (typeof opts.originX === 'number'
+            ? [{ x: opts.originX, y: opts.originY }]
+            : [centerOfViewport()]);
+      await Iris.cover(origins);
 
       history.pushState({ slug }, '', targetURL);
       render(slug);
@@ -935,7 +963,7 @@ addEventListener('popstate', async () => {
 
     if (goingToProject) {
       // Volvemos a un proyecto: sin coords del click, usamos el centro.
-      await Iris.cover(c.x, c.y);
+      await Iris.cover(c);
       render(slug);
       await Iris.pause();
       await new Promise((r) => requestAnimationFrame(r));

@@ -103,11 +103,32 @@ main.page {
   height: 100%;
   object-fit: cover;
   object-position: center;
-  transition: transform 0.6s cubic-bezier(0.2, 0, 0.2, 1);
 }
-.strip:hover .strip__media { transform: scale(1.03); }
 
-/* Dot (mokakopa-style: blend difference) */
+/* Velo + título centrado, aparece al hover */
+.strip__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.strip:hover .strip__overlay { opacity: 1; }
+
+.strip__title {
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
+/* Dos dots: en reposo apilados en el centro (se ven como uno solo).
+ * Al hover se separan horizontalmente, dejando el título entre ellos. */
 .strip .dot {
   position: absolute;
   top: 50%;
@@ -116,10 +137,13 @@ main.page {
   height: 10px;
   background: #fff;
   border-radius: 50%;
-  transform: translate(-50%, -50%);
   mix-blend-mode: difference;
   pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+.strip:hover .dot--left  { transform: translate(calc(-50% - 80px), -50%); }
+.strip:hover .dot--right { transform: translate(calc(-50% + 80px), -50%); }
 
 /* ============ PROYECTO ============ */
 .page-project {
