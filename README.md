@@ -64,13 +64,12 @@ valentin3/
 ├── js/
 │   └── main.js         ← lógica SPA (no tocar)
 ├── fonts/              ← fuente Outfit local (no tocar)
-├── assets/
-│   └── navicon.png     ← favicon
 ├── _PROJECTS/          ← ⭐ los archivos de cada proyecto
-│   ├── _valentin/      ← el "about", es un proyecto más
+│   ├── _valentin/      ← el "about", es un proyecto más (oculto en la home)
 │   ├── bolder/
 │   ├── brunch/
 │   └── …
+├── _BANNERS/           ← vídeos decorativos opcionales (ver más abajo)
 └── README.md           ← este archivo
 ```
 
@@ -78,9 +77,9 @@ valentin3/
 
 ## Cómo funciona la web, en 30 segundos
 
-- **Home** (`/`): cabecera + lista de tiras (una por proyecto). Al llegar al final se siguen generando aleatoriamente (infinite scroll).
+- **Home** (`/`): cabecera (con el nombre clickable que lleva al about) + lista de tiras (una por proyecto visible). Al llegar al final se siguen generando aleatoriamente (infinite scroll).
 - **Proyecto** (`/bolder`, `/lynn`, etc.): margen superior con un punto, ficha técnica + descripción, galería vertical de imágenes (con textos y audios intercalados si los hay), margen inferior con otro punto, y botón **back to home** al final.
-- **About** (`/_valentin`): es un proyecto más, pero en lugar de aparecer al final de la home sale el primero.
+- **About** (`/_valentin`): es un proyecto más con `visible: false`, así que NO aparece en la lista de tiras de la home — se accede clicando el nombre en la cabecera. La identidad del proyecto-about la marca `meta.about_slug` en `data.json`.
 - **Transición**: al clicar una tira se abre un círculo negro desde el punto, cubre todo, y al llegar a la nueva página se abre otro círculo que la descubre desde el centro. Al volver, el círculo que descubre se abre desde el punto de la tira del proyecto que acabas de ver.
 - **Lightbox**: al clicar una foto del proyecto se amplía en pantalla completa. Se cierra con ESC, click fuera, o las X de las esquinas. Flechas ← → para ir a la anterior/siguiente.
 
@@ -127,10 +126,13 @@ No te olvides de la coma al final del proyecto anterior.
 | `lugar` | Dónde se hizo. Aparece en la ficha |
 | `fecha` | Cuándo se hizo. Aparece en la ficha |
 | `descripcion` | Texto bajo el título del proyecto |
+| `portadaExt` | (opcional) Extensión del archivo de portada si NO es `webm`. Ver sección PORTADA |
+| `equipo` | (opcional) Array de colaboradores. Ver sección EQUIPO |
+| `extras` | (opcional) Textos / audios intercalados en la galería. Ver sección EXTRAS |
 
 > **Campos vacíos = se omiten del render.** Si un proyecto todavía no tiene `tipo`, `lugar`, `fecha` o `descripcion`, simplemente **no pongas el campo**. La sección correspondiente desaparece. La ficha técnica también desaparece entera si todos sus campos están vacíos.
 
-> **Olvidate de `imgHome` e `imgCount`** — ya no existen. La portada del strip de la home se busca como `_PROJECTS/<slug>/portada.webp` (ver siguiente sección) y la galería se descubre sola.
+> **Olvidate de `imgHome` e `imgCount`** — ya no existen. La portada del strip de la home se busca como `_PROJECTS/<slug>/portada.webm` (ver siguiente sección) y la galería se descubre sola.
 
 ### ✏️ Modificar un proyecto
 Abre `data.json`, busca el proyecto, edita los campos que quieras. Si cambias el `slug`, **renombra también la carpeta** en `_PROJECTS/` para que coincida.
@@ -145,7 +147,7 @@ Pon `"visible": false` en su entrada. Desaparece de la home pero `valentinbarrio
 ### 🔄 Cambiar el orden de los proyectos
 El orden en la home es el mismo que en el array `projects` de `data.json`. Mueve los objetos para reordenar.
 
-> El `_valentin` (about) siempre aparece primero, independientemente del orden.
+> El `_valentin` (about) está oculto (`visible: false`), no aparece en las tiras. El acceso es clicando el nombre en la cabecera de la home.
 
 ### 🎞️ Banners de vídeo intercalados
 
@@ -171,18 +173,22 @@ Si quieres meter un loop de vídeo decorativo entre proyectos (no clickable, ~5 
 Cada proyecto necesita una **portada dedicada** dentro de su carpeta:
 ```
 _PROJECTS/mi-proyecto/
-├── portada.webp     ← esta es la imagen del strip de la home
+├── portada.webm     ← esta es la portada del strip de la home (vídeo en bucle)
 ├── 1.webp           ← galería del proyecto
 ├── 2.webp
 └── …
 ```
 
-- **Formato recomendado:** `webp` con aspect ratio **3:1** (ej. 2000×667 px), peso < 300 KB.
-- **Otros formatos aceptados:** `jpg`, `png`. La web los detecta automáticamente.
-- **Vídeo:** también vale `mp4`, `webm` o `mov`. Se reproduce automuteado en bucle. Mismo aspect 3:1.
-- **El archivo se llama siempre `portada`** + la extensión que toque (`portada.webp`, `portada.mp4`, etc.).
+- **Por defecto la web busca `portada.webm`** (vídeo en bucle, automuteado, 3:1).
+- **Si quieres usar otro formato**, añade el campo `portadaExt` al proyecto en `data.json`:
+  ```json
+  { "slug": "lynn", "nombre": "Lynn", …, "portadaExt": "webp" }
+  ```
+  Extensiones soportadas: `webm`, `mp4`, `mov` (vídeo) o `webp`, `jpg`, `png` (imagen).
+- **Formato recomendado:** `webm` con aspect ratio **3:1** (ej. 2000×667 px), peso < 1 MB.
+- **El archivo se llama siempre `portada`** + la extensión que toque (`portada.webm`, `portada.webp`, etc.).
 
-> Si un proyecto no tiene `portada.<ext>`, el strip cae a `1.webp` automáticamente como último recurso. Pero si está oculto (`visible: false`) tampoco aparece en la home, así que no pasa nada.
+> Si un proyecto no tiene `portada.<ext>`, el strip queda transparente (sin imagen, pero el hover sigue funcionando). Si está oculto (`visible: false`) tampoco aparece en la home, así que no pasa nada.
 
 ---
 
@@ -224,33 +230,47 @@ Si un proyecto tuvo colaboradores, añade un array `equipo` al objeto del proyec
 
 ```json
 "equipo": [
-  { "nombre": "Rivka",  "rol": "photo assist & 2nd camera" },
+  { "nombre": "Rivka",  "rol": "photo assist & 2nd camera", "url": "https://instagram.com/rivka" },
   { "nombre": "Juanjo", "rol": "styling" }
 ]
 ```
 
-Cada entrada aparece en la ficha técnica. Si dejas `rol` vacío, se muestra como "team".
+Cada entrada aparece en la ficha técnica.
+
+| Campo | Qué es |
+|---|---|
+| `nombre` | Nombre que se muestra (obligatorio; si falta, la entrada se ignora) |
+| `rol` | Rol del colaborador. Si lo dejas vacío, se muestra como "team" |
+| `url` | (opcional) Enlace asociado al nombre. Si lo añades, el nombre se vuelve clickable y abre la URL en una pestaña nueva |
 
 ---
 
 ## ABOUT (`_valentin`)
 
-Es un proyecto más, pero en `data.json` vive fuera del array `projects`, dentro de la clave `about`. Soporta todo lo mismo (ficha, galería auto-descubierta, `extras` para intercalar texto/audio, equipo).
+El about es **un proyecto más** dentro del array `projects`, identificado por `meta.about_slug`. Tiene `"visible": false` para que no salga en las tiras de la home, y se accede clicando el nombre en la cabecera.
 
-### ✏️ Cambiar la bio, ubicación o tipo
-Editar `data.json` → `about`:
+Soporta todo lo de un proyecto normal (ficha, galería auto-descubierta, `extras` para intercalar texto/audio, equipo) y además un campo extra `web`:
+
 ```json
-"about": {
+{
   "slug": "_valentin",
-  "nombre": "valentin barrio",
-  "tipo": "Photography, Art Direction, Visual Storytelling",
-  "lugar": "Barcelona",
+  "nombre": "about me",
+  "visible": false,
+  "tipo": "",
+  "lugar": "",
+  "web": "meowrhino.studio",
   "descripcion": "Photographer and visual artist based in Barcelona…",
   "extras": [ … ]
 }
 ```
 
-> El slug `_valentin` empieza por `_` aposta para distinguirlo. Si lo cambias, **renombra también la carpeta** `_PROJECTS/_valentin/`.
+### Campo `web` (link "web: …" debajo de "back to home")
+Si un proyecto trae `web`, debajo del botón **back to home** aparece un link pequeño y centrado tipo `web: meowrhino.studio` que abre esa URL en pestaña nueva. Pensado para el about (créditos del estudio que hizo la web), pero técnicamente funciona en cualquier proyecto que añada el campo.
+
+### ✏️ Cambiar el about
+Edita la entrada `_valentin` dentro de `projects` en `data.json`. Si quieres cambiar el slug, cambia también `meta.about_slug` y **renombra la carpeta** `_PROJECTS/_valentin/` para que coincida.
+
+> El slug `_valentin` empieza por `_` aposta, para distinguirlo del resto.
 
 ---
 
@@ -260,20 +280,28 @@ Se edita en `data.json` → `meta`:
 ```json
 "meta": {
   "nombre": "valentin barrio",
+  "about_slug": "_valentin",
   "tagline": "creative based in europe",
   "email": "valentinbarrio@gmail.com",
   "instagram": "valentinbarrio"
 }
 ```
 
-> `instagram` es solo el handle, sin `@` ni URL. El sitio lo enlaza a `instagram.com/<handle>`.
-> Si lo quitas o lo dejas vacío, no aparece nada en la cabecera.
+| Campo | Qué es |
+|---|---|
+| `nombre` | Aparece grande en la cabecera. Si `about_slug` está definido, además se vuelve clickable y enlaza al about |
+| `about_slug` | Slug del proyecto que actúa como about. Normalmente `"_valentin"`. Si lo dejas vacío, el nombre deja de ser un link |
+| `tagline` | Subtítulo bajo el nombre |
+| `email` | Aparece como link `mailto:`. Si lo dejas vacío, no aparece |
+| `instagram` | Solo el handle, sin `@` ni URL. El sitio lo enlaza a `instagram.com/<handle>`. Si lo dejas vacío, no aparece |
 
 ---
 
 ## FAVICON
 
-El iconito de la pestaña del navegador está en `assets/navicon.png`. Reemplázalo con otro PNG del mismo nombre para cambiarlo.
+El iconito de la pestaña del navegador es un **SVG inline** dentro del propio HTML — no hay archivo aparte. Replica el favicon de la versión personal de la web antigua: un círculo con punto central (◉).
+
+Se define en el `<link rel="icon">` de `index.html` y `404.html` (línea 18 de cada uno). Para cambiarlo edita ese atributo `href` en los **dos archivos** (debe ser idéntico). Si te lías, mejor avisa antes de tocar — está pensado para no necesitar mantenimiento.
 
 ---
 
@@ -283,7 +311,7 @@ El iconito de la pestaña del navegador está en `assets/navicon.png`. Reempláz
 |---|---|
 | La web no carga nada | Error de sintaxis en `data.json` — una coma de más, una comilla sin cerrar. Valida con https://jsonlint.com |
 | Una imagen no se ve | El `slug` del proyecto no coincide con el nombre de la carpeta, o falta el archivo numerado (`3.webp`). Recuerda que la numeración tiene que ser consecutiva: si te saltas un número (`1.webp`, `2.webp`, falta el `3.webp`, `4.webp`), la web para de buscar en el hueco y no verás `4.webp` ni siguientes. |
-| La portada del proyecto en la home no es la que quiero | Cambia `_PROJECTS/<slug>/portada.webp` por la imagen que quieras (mismo nombre). |
+| La portada del proyecto en la home no es la que quiero | Reemplaza `_PROJECTS/<slug>/portada.webm` (o el archivo de portada que esté usando — `portada.webp`, `portada.mp4`, etc.) manteniendo el mismo nombre. |
 | El audio no suena | El `src` del bloque no coincide con el nombre exacto del archivo dentro de la carpeta del proyecto. Atento a mayúsculas/minúsculas y espacios. |
 | Los cambios no se ven | Caché del navegador. Ctrl+F5 (Windows) o Cmd+Shift+R (Mac). |
 | Al entrar directamente a `/bolder` da 404 | Solo en local con `python3 -m http.server`. En GitHub Pages sí funciona gracias a `404.html`. |

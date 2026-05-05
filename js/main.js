@@ -713,14 +713,16 @@ function buildFicha(p) {
   if (p.tipo)  ul.appendChild(buildFichaRow('type',  p.tipo));
   if (p.lugar) ul.appendChild(buildFichaRow('place', p.lugar));
   if (p.fecha) ul.appendChild(buildFichaRow('date',  p.fecha));
-  if (p.web)   ul.appendChild(h('li', {},
-    h('span', { class: 'k', textContent: 'web' }),
-    h('a', { class: 'v', href: `https://${p.web}`, target: '_blank', rel: 'noopener noreferrer', textContent: p.web }),
-  ));
   if (Array.isArray(p.equipo)) {
-    p.equipo.forEach(({ nombre, rol }) => {
+    p.equipo.forEach(({ nombre, rol, url }) => {
       if (!nombre) return;
-      ul.appendChild(buildFichaRow(rol || 'team', nombre));
+      const valueNode = url
+        ? h('a', { class: 'v', href: url, target: '_blank', rel: 'noopener noreferrer', textContent: nombre })
+        : h('span', { class: 'v', textContent: nombre });
+      ul.appendChild(h('li', {},
+        h('span', { class: 'k', textContent: rol || 'team' }),
+        valueNode,
+      ));
     });
   }
   if (!ul.children.length) return null;
@@ -817,7 +819,7 @@ function buildGallery(_p) {
 const buildProjMargin = (pos) =>
   h('div', { class: `proj-margin proj-margin--${pos}` }, h('span', { class: 'dot' }));
 
-function buildHomeLinkWrap(currentSlug) {
+function buildHomeLinkWrap(currentSlug, web) {
   const homeLink = h('a', {
     class: 'home-link',
     href: urlForSlug(null),
@@ -829,7 +831,17 @@ function buildHomeLinkWrap(currentSlug) {
     navigateTo(null, { fromSlug: currentSlug });
   });
 
-  return h('div', { class: 'home-link-wrap' }, homeLink);
+  const wrap = h('div', { class: 'home-link-wrap' }, homeLink);
+  if (web) {
+    wrap.appendChild(h('a', {
+      class: 'home-link-credit',
+      href: `https://${web}`,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      textContent: `web: ${web}`,
+    }));
+  }
+  return wrap;
 }
 
 function renderProject(data, slug) {
@@ -851,7 +863,7 @@ function renderProject(data, slug) {
     body,
     gallery,
     buildProjMargin('bottom'),
-    buildHomeLinkWrap(slug),
+    buildHomeLinkWrap(slug, p.web),
   );
   mount(main);
 
