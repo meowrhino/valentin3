@@ -61,19 +61,6 @@
       ]
     },
     {
-      "slug": "kult",
-      "nombre": "Kult",
-      "visible": false,
-      "tipo": "club",
-      "lugar": "Barcelona",
-      "fecha": "dec. 25",
-      "descripcion": "Dark editorial for Kult magazine. Textures, shadows, and bold silhouettes.",
-      "equipo": [
-        { "nombre": "Bruno", "rol": "styling" },
-        { "nombre": "Alex", "rol": "art direction" }
-      ]
-    },
-    {
       "slug": "lucho",
       "nombre": "Lucho (Ve)",
       "visible": true,
@@ -107,18 +94,6 @@
       "descripcion": "Razzmatazz nights. The energy of the crowd under neon and strobe.",
       "equipo": [
         { "nombre": "Tomás", "rol": "2nd camera" }
-      ]
-    },
-    {
-      "slug": "santana",
-      "nombre": "Santana",
-      "visible": false,
-      "tipo": "festival",
-      "lugar": "Barcelona",
-      "fecha": "feb. 26",
-      "descripcion": "Character study in urban environments. Street meets studio.",
-      "equipo": [
-        { "nombre": "Lara", "rol": "photo assist" }
       ]
     },
     {
@@ -182,38 +157,6 @@
       "extras": [
         { "tipo": "audio", "src": "voice-heyami.opus", "posicion": 0 },
         { "tipo": "texto", "texto": "Identity isn't designed; it's discovered.", "posicion": 4 }
-      ]
-    },
-    {
-      "slug": "insomnia",
-      "nombre": "Insomnia",
-      "visible": false,
-      "equipo": [
-        { "nombre": "Nico", "rol": "photo assist" }
-      ]
-    },
-    {
-      "slug": "quiet",
-      "nombre": "Quiet",
-      "visible": false,
-      "equipo": [
-        { "nombre": "Lara", "rol": "mua" }
-      ]
-    },
-    {
-      "slug": "fragments",
-      "nombre": "Fragments",
-      "visible": false,
-      "equipo": [
-        { "nombre": "Pol", "rol": "styling" }
-      ]
-    },
-    {
-      "slug": "alona",
-      "nombre": "Alona",
-      "visible": false,
-      "equipo": [
-        { "nombre": "Sofi", "rol": "photo assist" }
       ]
     }
   ]
