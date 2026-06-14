@@ -582,9 +582,20 @@ function appendRandomBatch(n = 6) {
       InfState.pool = shuffle(InfState.pool);
       InfState.poolPtr = 0;
     }
-    // Si el siguiente coincide con el último añadido, avanzamos uno más
-    if (InfState.pool.length > 1 && idOf(InfState.pool[InfState.poolPtr]) === InfState.lastSlug) {
+    // Evita repetición inmediata: mientras el siguiente coincida con el último
+    // añadido, avanzamos (re-barajando al agotar el pool). Es un bucle acotado
+    // —máx. pool.length saltos— porque, al triplicar el pool, tras el barajado
+    // pueden quedar copias del mismo slug seguidas. También cubre la costura
+    // entre la pasada inicial (orden del JSON, termina en el último proyecto)
+    // y el primer batch aleatorio: `lastSlug` se siembra con ese último strip.
+    let guard = 0;
+    while (
+      InfState.pool.length > 1 &&
+      guard < InfState.pool.length &&
+      idOf(InfState.pool[InfState.poolPtr]) === InfState.lastSlug
+    ) {
       InfState.poolPtr++;
+      guard++;
       if (InfState.poolPtr >= InfState.pool.length) {
         InfState.pool = shuffle(InfState.pool);
         InfState.poolPtr = 0;
@@ -600,10 +611,15 @@ function appendRandomBatch(n = 6) {
   if (InfState.videoIO) newStrips.forEach(el => InfState.videoIO.observe(el));
 }
 
-function setupInfiniteScroll(projects, signal) {
+function setupInfiniteScroll(projects, signal, seedLastSlug = null) {
   // Triplicamos para que el ciclo de "re-baraja" no sea tan frecuente.
   InfState.pool = shuffle([...projects, ...projects, ...projects]);
   InfState.poolPtr = 0;
+  // Sembramos el último slug con el del último strip de la pasada inicial, para
+  // que el primer ítem del infinito nunca repita ese proyecto (evita el caso
+  // raro de empezar por el mismo que cierra el orden del JSON). Se reinicia en
+  // cada entrada a home, evitando arrastrar estado stale entre navegaciones.
+  InfState.lastSlug = seedLastSlug;
 
   let ticking = false;
   const onScroll = () => {
@@ -686,21 +702,22 @@ function renderHome(data) {
   const strips = h('div', { class: 'strips' });
   // Orden inicial: proyectos visibles + banners, en el orden del JSON.
   // Los banners son decorativos, no clickables, y solo aparecen en esta pasada.
-  (data.projects || [])
-    .filter((it) => it.banner || it.visible !== false)
-    .forEach((it) => {
-      strips.appendChild(it.banner ? buildBanner(it) : buildStrip(it));
-    });
+  const visibleItems = (data.projects || []).filter((it) => it.banner || it.visible !== false);
+  visibleItems.forEach((it) => {
+    strips.appendChild(it.banner ? buildBanner(it) : buildStrip(it));
+  });
 
   const main = h('main', { class: 'page page-home' }, header, strips);
   mount(main);
 
   InfState.videoIO = setupVideoLazyLoad(strips);
 
-  // El infinito mezcla proyectos visibles + banners.
-  const shufflable = (data.projects || []).filter(it => it.banner || it.visible !== false);
+  // El infinito mezcla proyectos visibles + banners. Le pasamos el último ítem
+  // de la pasada inicial como semilla para que el scroll no arranque repitiéndolo.
+  const lastInitial = visibleItems[visibleItems.length - 1];
+  const seedLastSlug = lastInitial ? (lastInitial.banner || lastInitial.slug) : null;
   InfState.stripsEl = strips;
-  setupInfiniteScroll(shufflable, pageAbort.signal);
+  setupInfiniteScroll(visibleItems, pageAbort.signal, seedLastSlug);
 }
 
 
