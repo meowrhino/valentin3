@@ -16,20 +16,28 @@
       "web": "meowrhino.studio",
       "descripcion": "Photographer and visual artist based in Barcelona. Focused on capturing the raw energy of live events, fashion editorials, and intimate portraits.",
       "extras": [
-        { "tipo": "texto", "texto": "Every frame is a conversation between what happened and what I chose to see.", "posicion": 3 },
-        { "tipo": "audio", "src": "WhatsApp Audio 2026-04-09 at 11.23.28.opus", "posicion": 5 },
-        { "tipo": "texto", "texto": "I don't chase the light. I wait for it to find its way.", "posicion": 7 },
-        { "tipo": "texto", "texto": "The silence between two frames is where the real story lives.", "posicion": 9 }
+        { "tipo": "texto", "texto": "Between life and death there is a space that holds a story.", "posicion": 2 }
       ]
     },
+     {
+      "slug": "bunker",
+      "nombre": "bunker",
+      "visible": true,
+      "extension_portada": "webp",
+      "tipo": "club",
+      "lugar": "Barcelona",
+      "fecha": "jun 26",
+      "descripcion": "guiding light through the club experience."
+    },
     {
-      "slug": "bolder",
-      "nombre": "Bolder",
-      "visible": false,
+      "slug": "alona",
+      "nombre": "alona",
+      "visible": true,
+      "extension_portada": "webp",
       "tipo": "press",
       "lugar": "Barcelona",
-      "fecha": "jan. 26",
-      "descripcion": "Editorial shoot exploring contrast between urban attitude and raw natural landscapes."
+      "fecha": "may 25",
+      "descripcion": "personal descovery starring Alona."
     },
     {
       "slug": "brunch",
@@ -40,6 +48,16 @@
       "lugar": "Barcelona",
       "fecha": "august 25",
       "descripcion": "Full documentation of the Brunch electronic music series. Light, smoke, and movement."
+    },
+     {
+      "slug": "bolder",
+      "nombre": "bolder",
+      "visible": true,
+      "extension_portada": "webp",
+      "tipo": "press",
+      "lugar": "Barcelona",
+      "fecha": "feb 26",
+      "descripcion": "collective first-ever presskit."
     },
     {
       "slug": "kalaRos",
@@ -73,7 +91,7 @@
         { "nombre": "Rivka", "rol": "photo assist & 2nd camera", "url": "https://instagram.com/rivka" }
       ]
     },
-    { "banner": "banner1.webm" },
+    { "banner": "columna.webm" },
     {
       "slug": "razz",
       "nombre": "Razz",
@@ -104,7 +122,7 @@
       "fecha": "dec. 25",
       "descripcion": "Fashion editorial blending Eastern and Western aesthetics."
     },
-    { "banner": "banner2.webm" },
+    { "banner": "tetas.webm" },
     {
       "slug": "carlos",
       "nombre": "Carlos",
