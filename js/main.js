@@ -1040,6 +1040,10 @@ async function navigateTo(slug, opts = {}) {
     }
   } finally {
     Iris.setBusy(false);
+    // Si durante la transición llegó otro cambio de URL (p.ej. popstate
+    // descartado por estar ocupado), la URL y lo renderizado pueden haber
+    // quedado desincronizados: re-renderizamos sin animación para alinearlos.
+    if (slugFromPath() !== lastSlug) render(slugFromPath());
   }
 }
 
@@ -1073,6 +1077,8 @@ addEventListener('popstate', async () => {
     }
   } finally {
     Iris.setBusy(false);
+    // Idem navigateTo: si quedó desincronizado, re-renderizamos sin animación.
+    if (slugFromPath() !== lastSlug) render(slugFromPath());
   }
 });
 
