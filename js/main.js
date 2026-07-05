@@ -112,6 +112,38 @@ async function loadData() {
   return DATA;
 }
 
+// ----------------------------------------------------------------------------
+// MANIFEST — lista de imágenes por proyecto, generada en build time.
+// ----------------------------------------------------------------------------
+// `manifest.json` (generado por scripts/build-manifest.mjs vía GitHub Action)
+// contiene, por slug, la lista ordenada de archivos numerados que existen de
+// verdad —tolerando huecos en la numeración— con sus dimensiones cuando se
+// pudieron leer. Cuando está disponible, evita el sondeo con HEAD requests y
+// arregla el bug del "hueco" (si falta 3.webp, 4.webp en adelante seguían sin
+// mostrarse).
+//
+// La carga NO bloquea el render: si falla (no existe el archivo, red caída…)
+// seguimos sin él y cada proyecto cae al discoverGalleryCount() de siempre.
+let MANIFEST = null;
+
+async function loadManifest() {
+  try {
+    const res = await fetch(asset('manifest.json'));
+    if (!res.ok) return null;
+    MANIFEST = await res.json();
+  } catch {
+    MANIFEST = null; // sin manifest: fallback a discoverGalleryCount()
+  }
+  return MANIFEST;
+}
+
+/** Devuelve la lista de imágenes del slug según el manifest, o null si no hay
+ *  manifest o el slug no está listado (→ el caller usará el fallback). */
+function manifestImages(slug) {
+  const list = MANIFEST?.projects?.[slug];
+  return Array.isArray(list) && list.length ? list : null;
+}
+
 /** Busca un proyecto por slug. */
 function findProject(data, slug) {
   if (!slug) return null;
@@ -809,14 +841,18 @@ function buildExtraBlock(slug, extra) {
   return null;
 }
 
-/** Rellena la galería con las `count` imágenes numeradas (1..count) e
- *  intercala los `extras` según su `posicion`:
+/** Rellena la galería con la lista `images` e intercala los `extras` según su
+ *  `posicion`:
  *   - posicion 0 → antes de la primera imagen
  *   - posicion N → justo después de la N-ésima imagen
- *  Varios extras pueden compartir posición; salen en el orden del array. */
-function populateGallery(gallery, p, count) {
-  const allImageUrls = [];
-  for (let i = 1; i <= count; i++) allImageUrls.push(projectImgUrl(p.slug, i));
+ *  Varios extras pueden compartir posición; salen en el orden del array.
+ *
+ *  `images` es un array de entradas `{ url, file, width?, height? }`. Si hay
+ *  width/height los ponemos como atributos del <img> para reservar el espacio
+ *  y evitar layout shift (el CSS ya hace width:100%; height:auto). Las URLs
+ *  que se pasan al Lightbox son EXACTAMENTE las mismas que las de los <img>. */
+function populateGallery(gallery, p, images) {
+  const allImageUrls = images.map((im) => im.url);
 
   const extrasByPos = {};
   for (const ex of (p.extras || [])) {
@@ -831,18 +867,21 @@ function populateGallery(gallery, p, count) {
   };
 
   flushExtras(0);
-  for (let i = 1; i <= count; i++) {
-    const myIdx = i - 1;
+  images.forEach((im, myIdx) => {
     const img = h('img', {
-      src: projectImgUrl(p.slug, i),
-      alt: `${p.nombre || p.slug} — ${i}`,
+      src: im.url,
+      alt: `${p.nombre || p.slug} — ${myIdx + 1}`,
       loading: 'lazy',
       class: 'gallery__img',
+      // Dimensiones intrínsecas (solo si el manifest las trae) para evitar
+      // layout shift; el CSS las reescala manteniendo el aspect ratio.
+      width: im.width || null,
+      height: im.height || null,
     });
     img.addEventListener('click', () => Lightbox.open(allImageUrls, myIdx, img));
     gallery.appendChild(img);
-    flushExtras(i);
-  }
+    flushExtras(myIdx + 1);
+  });
 }
 
 function buildGallery(_p) {
@@ -902,12 +941,31 @@ function renderProject(data, slug) {
   );
   mount(main);
 
-  // Auto-discovery de imágenes + intercalado de extras (texto/audio) según
-  // su `posicion`. No bloquea la transición; aparece tras ~300-700ms.
-  discoverGalleryCount(p.slug).then((count) => {
-    if (!gallery.isConnected) return; // ya navegó a otra página
-    if (count > 0 || p.extras?.length) populateGallery(gallery, p, count);
-  });
+  // Lista de imágenes + intercalado de extras (texto/audio) según su `posicion`.
+  //
+  //   1) Camino normal: si el manifest trae entrada para el slug, usamos su
+  //      lista de archivos reales (arregla el bug del hueco y evita el sondeo).
+  //   2) Fallback: sin manifest (o slug ausente) caemos al discoverGalleryCount
+  //      de siempre, que numera 1..count. No bloquea la transición.
+  const listed = manifestImages(p.slug);
+  if (listed) {
+    const images = listed.map((it) => ({
+      url: projectsAsset(p.slug, it.file),
+      file: it.file,
+      width: it.width,
+      height: it.height,
+    }));
+    if (images.length || p.extras?.length) populateGallery(gallery, p, images);
+  } else {
+    discoverGalleryCount(p.slug).then((count) => {
+      if (!gallery.isConnected) return; // ya navegó a otra página
+      const images = [];
+      for (let i = 1; i <= count; i++) {
+        images.push({ url: projectImgUrl(p.slug, i), file: `${i}.webp` });
+      }
+      if (images.length || p.extras?.length) populateGallery(gallery, p, images);
+    });
+  }
 }
 
 function renderNotFound(slug) {
@@ -1101,7 +1159,10 @@ addEventListener('keydown', (e) => {
 // ============================================================================
 (async () => {
   try {
-    await loadData();
+    // Cargamos data.json y manifest.json en paralelo. loadManifest() nunca
+    // lanza (traga sus errores), así que un manifest ausente no rompe el init:
+    // simplemente MANIFEST queda null y cada proyecto usará el fallback.
+    await Promise.all([loadData(), loadManifest()]);
     render(slugFromPath());
   } catch (err) {
     console.error(err);
