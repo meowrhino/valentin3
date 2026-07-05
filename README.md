@@ -208,7 +208,7 @@ La extensión del archivo decide cómo se renderiza:
 - **Vídeo:** preferible `webm` por peso pequeño y soporte nativo.
 - **Imagen:** preferible `webp` por la misma razón.
 
-> Hay 2 banners de muestra en `_BANNERS/` (`banner1.webm`, `banner2.webm`). Bórralos o sustitúyelos cuando metas los tuyos.
+> `_BANNERS/` ya trae varios vídeos `.webm` de ejemplo (`balcon.webm`, `columna.webm`, `dedos.webm`, `ojoFuego.webm`, `tetas.webm`, `PORTADAVID6_1080.webm`…). Bórralos o sustitúyelos cuando metas los tuyos.
 
 ---
 
