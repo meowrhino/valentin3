@@ -711,6 +711,9 @@ function renderHome(data) {
   mount(main);
 
   InfState.videoIO = setupVideoLazyLoad(strips);
+  // Desconectamos el observer al desmontar la página (mount() aborta el
+  // pageAbort anterior antes de crear este, así que el signal es el vigente).
+  pageAbort.signal.addEventListener('abort', () => InfState.videoIO.disconnect());
 
   // El infinito mezcla proyectos visibles + banners. Le pasamos el último ítem
   // de la pasada inicial como semilla para que el scroll no arranque repitiéndolo.
