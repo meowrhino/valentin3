@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "bunker",
+  "type": "club",
+  "place": "Barcelona",
+  "date": "jun 26",
+  "text": "guiding light through the club experience."
+}

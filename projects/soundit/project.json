@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "Sound it!",
+  "type": "festival",
+  "place": "Barcelona",
+  "date": "august 25",
+  "text": "Complete visual chronicle of Soundit festival. From backstage to main stage."
+}

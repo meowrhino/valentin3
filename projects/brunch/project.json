@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "Brunch!",
+  "type": "festival",
+  "place": "Barcelona",
+  "date": "august 25",
+  "text": "Full documentation of the Brunch electronic music series. Light, smoke, and movement."
+}

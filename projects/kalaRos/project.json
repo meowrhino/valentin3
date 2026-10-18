@@ -1,0 +1,9 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "Kala Ros",
+  "visible": false,
+  "type": "press",
+  "place": "Barcelona",
+  "date": "dec. 25",
+  "text": "Intimate portrait series. Natural light, minimal intervention."
+}

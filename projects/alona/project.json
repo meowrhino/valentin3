@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "alona",
+  "type": "press",
+  "place": "Barcelona",
+  "date": "may 25",
+  "text": "personal descovery starring Alona."
+}

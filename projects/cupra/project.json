@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "CUPRA",
+  "type": "brand",
+  "place": "Barcelona",
+  "date": "july 26",
+  "text": "following CUPRA Raval presentation at Barcelona-Catalunya circuit."
+}

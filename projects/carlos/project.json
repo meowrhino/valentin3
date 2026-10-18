@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "Carlos",
+  "type": "press",
+  "place": "Barcelona",
+  "date": "Spring 2025",
+  "text": "Portrait editorial with Carlos. Character, attitude, and natural expression."
+}

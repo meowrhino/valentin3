@@ -1,0 +1,14 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "about me",
+  "visible": false,
+  "text": "Photographer and visual artist based in Barcelona. Focused on capturing the raw energy of live events, fashion editorials, and intimate portraits.",
+  "web": "meowrhino.studio",
+  "extras": [
+    {
+      "type": "text",
+      "text": "Between life and death there is a space that holds a story.",
+      "position": 2
+    }
+  ]
+}

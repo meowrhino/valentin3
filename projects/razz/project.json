@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "Razz",
+  "type": "club",
+  "place": "Barcelona",
+  "date": "feb. 25",
+  "text": "Razzmatazz nights. The energy of the crowd under neon and strobe."
+}

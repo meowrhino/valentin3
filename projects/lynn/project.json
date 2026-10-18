@@ -1,0 +1,15 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "Lynn",
+  "type": "press",
+  "place": "Mallorca",
+  "date": "oct. 25",
+  "text": "Golden hour portrait session. Warmth and authenticity.",
+  "team": [
+    {
+      "name": "Rivka",
+      "role": "photo assist & 2nd camera",
+      "url": "https://instagram.com/rivka"
+    }
+  ]
+}

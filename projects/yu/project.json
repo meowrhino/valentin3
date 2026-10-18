@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "Yu",
+  "type": "club",
+  "place": "Barcelona",
+  "date": "dec. 25",
+  "text": "Fashion editorial blending Eastern and Western aesthetics."
+}

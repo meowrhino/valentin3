@@ -2,7 +2,7 @@
 // valentin3 — SPA portfolio
 // ----------------------------------------------------------------------------
 // Toda la web vive en esta sola página. Este script:
-//   1. lee `data.json` (proyectos)
+//   1. lee los datos (js/carga.js: data/site.json + projects/)
 //   2. pinta la home (tiras/strips + scroll infinito random)
 //   3. pinta cada proyecto (ficha + galería + audios + textos)
 //   4. enlaza URLs limpias (`/bolder`) con pushState + 404.html fallback
@@ -10,6 +10,8 @@
 //   6. muestra imágenes en un lightbox con FLIP-style animation
 // ============================================================================
 
+
+import { loadData as loadSite } from './carga.js';
 
 // ============================================================================
 // BASE PATH
@@ -23,14 +25,14 @@ const BASE_PATH = new URL('../', import.meta.url).pathname;
 /** Convierte una ruta relativa del repo en una URL absoluta válida. */
 const asset = (p) => BASE_PATH + String(p).replace(/^\.?\/+/, '');
 
-/** URL a un archivo dentro de `_PROJECTS/<slug>/`. */
-const projectsAsset = (slug, file) => asset(`_PROJECTS/${slug}/${file}`);
+/** URL a un archivo dentro de `projects/<slug>/`. */
+const projectsAsset = (slug, file) => asset(`projects/${slug}/${file}`);
 
 /** URL a la imagen N-ésima de un proyecto (se asume .webp). */
 const projectImgUrl = (slug, n) => projectsAsset(slug, `${n}.webp`);
 
 /** URL a un archivo de banner (vídeo decorativo intercalado en la home). */
-const bannerAsset = (file) => asset(`_BANNERS/${file}`);
+const bannerAsset = (file) => asset(`data/banners/${file}`);
 
 /** Lee el slug actual desde la URL, o null si estamos en la home. */
 function slugFromPath() {
@@ -106,9 +108,7 @@ let DATA = null;
 
 async function loadData() {
   if (DATA) return DATA;
-  const res = await fetch(asset('data.json'));
-  if (!res.ok) throw new Error(`data.json ${res.status}`);
-  DATA = await res.json();
+  DATA = await loadSite();
   return DATA;
 }
 
@@ -481,7 +481,7 @@ const InfState = {
 const PORTADA_VIDEO_EXTS = ['mp4', 'webm', 'mov'];
 
 /** Construye el medio del strip.
- *  Cada proyecto declara su formato en `extension_portada` (data.json). El
+ *  Cada proyecto declara su formato en `extension_portada` (project.json → cover). El
  *  archivo siempre se llama `portada.<ext>` — sin probing ni fallbacks que
  *  generen 404s. Por defecto, webp (imagen).
  *  Para extensiones de vídeo (webm/mp4/mov) carga el src de forma lazy
@@ -515,7 +515,7 @@ function buildStripMedia(slug, alt, extension_portada) {
 }
 
 /** Crea un banner decorativo (no clickable) para intercalar en la home entre
- *  proyectos. `item.banner` es el nombre del archivo dentro de `_BANNERS/`;
+ *  proyectos. `item.banner` es el nombre del archivo dentro de `data/banners/`;
  *  la extensión decide si es vídeo (webm/mp4/mov) o imagen (webp/jpg/png/gif).
  *  Comparte forma con `.strip` (3:1 full width) pero sin link, hover ni dots. */
 function buildBanner(item) {
@@ -730,7 +730,7 @@ function renderHome(data) {
 // Estructura:
 //   .proj-margin--top   ← 20dvh con un dot centrado
 //   .proj-body          ← descripción + ficha técnica
-//   .gallery            ← imágenes 1..N (desde `imagenes` en data.json, o
+//   .gallery            ← imágenes 1..N (desde `imagenes` en project.json, o lo que cuenta el build, o
 //                          auto-discovered si no está) con extras
 //                          (texto/audio) intercalados según `posicion`
 //   .proj-margin--bottom ← 20dvh con dot
@@ -774,7 +774,7 @@ function buildDescription(p) {
 }
 
 /** Sondeo doblado + binario para descubrir cuántas imágenes numeradas existen
- *  en `_PROJECTS/<slug>/`. Eficiente incluso para galerías grandes (~13 HEAD
+ *  en `projects/<slug>/`. Eficiente incluso para galerías grandes (~13 HEAD
  *  requests para 81 imágenes). Devuelve 0 si no hay ninguna. */
 async function discoverGalleryCount(slug, max = 500) {
   const head = (n) => fetch(projectImgUrl(slug, n), { method: 'HEAD' })
@@ -910,7 +910,7 @@ function renderProject(data, slug) {
   // Lista de imágenes + intercalado de extras (texto/audio) según su `posicion`.
   //
   //   1) Camino rápido: si el proyecto declara `imagenes` (entero > 0) en
-  //      data.json, construimos la lista 1..N directamente y pintamos la
+  //      project.json (o lo cuenta el build), construimos la lista 1..N directamente y pintamos la
   //      galería sin ninguna petición de descubrimiento. Un archivo que
   //      falte (conteo mal puesto o hueco) simplemente no se muestra, gracias
   //      al handler de error de cada <img>.

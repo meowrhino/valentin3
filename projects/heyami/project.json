@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/project.json",
+  "title": "Hey Ami",
+  "type": "press",
+  "place": "Barcelona",
+  "date": "Winter 2025",
+  "text": "Creative direction and photography for Hey Ami. Bold visuals and identity."
+}

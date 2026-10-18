@@ -1,0 +1,33 @@
+{
+  "$schema": "../schema/site.json",
+  "url": "https://valentinbarrio.com",
+  "name": "valentin barrio",
+  "tagline": "creative based in europe",
+  "email": "valentinbarrio.f@gmail.com",
+  "instagram": "valentinbarrio",
+  "about": "_valentin",
+  "lists": {
+    "home": [
+      "_valentin",
+      "cupra",
+      "bunker",
+      "alona",
+      "brunch",
+      "bolder",
+      "kalaRos",
+      "lucho",
+      "lynn",
+      {
+        "banner": "columna.webm"
+      },
+      "razz",
+      "soundit",
+      "yu",
+      {
+        "banner": "tetas.webm"
+      },
+      "carlos",
+      "heyami"
+    ]
+  }
+}
